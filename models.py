@@ -121,4 +121,49 @@ def init_db():
 if __name__ == '__main__':
     init_db()
 
-
+#
+# @app.route('/novo_usuario', methods=['POST'])
+# def criar_usuario():
+#     try:
+#         dados_usuario = request.get_json()
+#         # print(dados_usuario)
+#         # print(dados_usuario["cpf"])
+#         # quando clicar no botao de salva
+#         if not "cpf" in dados_usuario or not "nome" in dados_usuario or not "endereco" in dados_usuario:
+#             return jsonify({
+#                 'error': 'Campo inexistente'
+#             })
+#
+#         if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "":
+#             return jsonify({
+#                 "error": "Preencher todos os campos"
+#             })
+#
+#
+#         else:
+#             nome = dados_usuario['nome']
+#             cpf = dados_usuario['cpf']
+#             endereco = dados_usuario['endereco']
+#
+#             form_novo_usuario = Usuarios(nome=nome,
+#                                          cpf=cpf,
+#                                          endereco=endereco,
+#                                          )
+#
+#             print(form_novo_usuario)
+#             cpf_existente = db_session.execute(select(Usuarios).filter_by(cpf=int(cpf))).scalar()
+#             if cpf_existente:
+#                 return jsonify({'Este cpf já é existente'})
+#             form_novo_usuario.save()
+#             # db_session.close()
+#             # return jsonify({ })
+#             resultado = [{
+#                 "nome": nome,
+#                 "cpf": cpf,
+#                 "endereco": endereco,
+#             },
+#                 {"success": "Usuario cadastrado com sucesso!"}
+#             # dentro do url sempre chamar função
+#             return jsonify(resultado)
+#     except Exception as e:
+#         return jsonify({"error": str(e)})

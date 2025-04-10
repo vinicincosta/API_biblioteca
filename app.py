@@ -1,3 +1,5 @@
+from sys import exception
+
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -14,6 +16,19 @@ def pagina_inicial():
 
 @app.route('/livro', methods=['GET'])
 def livro():
+    """
+        Listar todos os livros
+        :return:Listar todos os livros cadastrados.
+
+        ## Resposta (JSON)
+            json
+        {
+            'lista_livro': lista_livro
+        }
+
+        #Erros possíveis:
+        Se inserir letras retornará uma mensagem de invalidez
+        """
     sql_livro = select(Livro)
     resultado_livro = db_session.execute(sql_livro).scalars()
     lista_livro = []
@@ -27,6 +42,19 @@ def livro():
 
 @app.route('/livros_disponiveis', methods=['GET'])
 def livros_disponiveis():
+    """
+        Listar os livros disponiveis
+        :return:Listar os livros disponiveis
+
+        ## Resposta (JSON)
+            json
+        {
+            'livros_disponiveis': lista_livros
+        }
+
+        #Erros possíveis:
+        Se inserir letras retornará uma mensagem de invalidez
+        """
     livros_emprestadoss = select(Emprestimos.livro_emprestado_id).where(Emprestimos.id == Livro.id)
     lista_livros_emprestados = db_session.execute(livros_emprestadoss).scalars()
     todos_livros = db_session.execute(select(Livro)).scalars()
@@ -40,7 +68,21 @@ def livros_disponiveis():
 
 
 @app.route('/livros_emprestados', methods=['GET'])
+
 def livros_emprestados():
+    """
+        Listar os livros emprestados
+        :return:Listar os livros emprestados
+
+        ## Resposta (JSON)
+            json
+        {
+           livros_emprestados': lista_livros
+        }
+
+        #Erros possíveis:
+        Se inserir letras retornará uma mensagem de invalidez
+        """
     livros_disponiveis = select(Emprestimos.livro_emprestado_id).where(Emprestimos.id == Livro.id)
     lista_livros_disponiveis = db_session.execute(livros_disponiveis).scalars()
     todos_livro = db_session.execute(select(Livro)).scalars()
@@ -54,7 +96,23 @@ def livros_emprestados():
 
 
 @app.route('/historico_emprestimos/<int:id_usuario>', methods=['GET'])
+
 def historico_emprestimos(id_usuario):
+    """
+        Listar os livros emprestados
+        :return:Listar os livros emprestados por id_usuario
+        :param id_usuario: id_usuario
+
+        ## Resposta (JSON)
+            json
+        {
+           livros_emprestados': lista_livros
+        }
+
+        #Erros possíveis:
+        Se inserir letras retornará uma mensagem de invalidez
+        """
+
     try:
         id_usuari = int(id_usuario)
         emprestimo_usuario = db_session.execute(select(Emprestimos).
@@ -62,12 +120,17 @@ def historico_emprestimos(id_usuario):
 
     except ValueError:
         return jsonify({
-        'error': 'Valor inserido invalido'
-    })
+            'error': 'Valor inserido invalido'
+        })
+
+    if not id_usuari:
+        return jsonify({
+            "error": "Este usuario não existe"
+        })
 
     if not emprestimo_usuario:
         return jsonify({
-            "error": "Este usuario não existe"
+            "error": "Este usuario não realizou empréstimos"
         })
     #
     # if emprestimo_usuario == id_usuario:
@@ -84,10 +147,21 @@ def historico_emprestimos(id_usuario):
     })
 
 
-
-
 @app.route('/usuario', methods=['GET'])
 def usuario():
+    """
+        Listar todos os usuario
+        :return:Listar todos os usuario
+
+        ## Resposta (JSON)
+            json
+        {
+            'lista_usuario': lista_usuario
+        }
+
+        #Erros possíveis:
+        Se inserir letras retornará uma mensagem de invalidez
+        """
     sql_usuario = select(Usuarios)
     resultado_usuario = db_session.execute(sql_usuario).scalars()
     lista_usuario = []
@@ -101,6 +175,19 @@ def usuario():
 
 @app.route('/emprestimo', methods=['GET'])
 def emprestimo():
+    """
+           Listar todos os emprestimos
+           :return:Listar todos os emprestimos
+
+           ## Resposta (JSON)
+               json
+           {
+               'lista_emprestimo': lista_emprestimo
+           }
+
+           #Erros possíveis:
+           Se inserir letras retornará uma mensagem de invalidez
+           """
     sql_emprestimo = select(Emprestimos)
     resultado_emprestimo = db_session.execute(sql_emprestimo).scalars()
     lista_emprestimo = []
@@ -114,18 +201,42 @@ def emprestimo():
 
 @app.route('/novo_livro', methods=['POST'])
 def criar_livro():
-    # quando clicar no botao de salva
-    if request.method == "POST":
+    """
+               Cadastrar um novo livro
+               :return: Cadastrar novo livro
 
-        if (not request.form['form_titulo'] or not request.form['form_autor']
-                or not request.form['form_ISBN'] or not request.form['form_resumo']):
-            print('teste')
-            return jsonify({"error": "Preencher todos os campos"})
+               ## Resposta (JSON)
+                   json
+               {
+                resultado = [{
+                    "titulo": titulo,
+                    "autor": autor,
+                    "ISBN": ISBN,
+                    "resumo": resumo
+                    {"success": "Livro cadastrado com sucesso!"}]
+                    return jsonify(resultado)
+               }
+   """
+    try:
+        # quando clicar no botao de salva
+        dados_livro = request.get_json()
+
+        if not 'titulo' in dados_livro or not 'autor' in dados_livro or not 'ISBN' in dados_livro or not 'ISBN' in dados_livro:
+            return jsonify({
+                'error': 'Campo inexistente'
+            })
+
+        if dados_livro['titulo'] == "" or dados_livro['autor'] == "" or dados_livro['ISBN'] == "" or dados_livro[
+            'resumo'] == "":
+            return jsonify({
+                "error": "Preencher todos os campos"
+            })
+
         else:
-            titulo = request.form['form_titulo']
-            autor = request.form['form_autor']
-            ISBN = request.form['form_ISBN']
-            resumo = request.form['form_resumo']
+            titulo = dados_livro['titulo']
+            autor = dados_livro['autor']
+            ISBN = dados_livro['ISBN']
+            resumo = dados_livro['resumo']
             form_novo_livro = Livro(titulo=titulo,
                                     autor=autor,
                                     ISBN=int(ISBN),
@@ -133,33 +244,59 @@ def criar_livro():
                                     )
             print(form_novo_livro)
             form_novo_livro.save()
-            # db_session.close()
-            # return jsonify({ })
 
+            resultado = [{
+                "titulo": titulo,
+                "autor": autor,
+                "ISBN": ISBN,
+                "resumo": resumo
+            },
+                {"success": "Livro cadastrado com sucesso!"}]
             # dentro do url sempre chamar função
+            return jsonify(resultado)
 
-            return jsonify({
-                "success": "Livro cadastrado com sucesso!",
-                'titulo': form_novo_livro.titulo,
-                'autor': form_novo_livro.autor,
-                'ISBN': form_novo_livro.ISBN,
-                'resumo': form_novo_livro.resumo,
-            })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/novo_usuario', methods=['POST'])
 def criar_usuario():
-    # quando clicar no botao de salva
-    if request.method == "POST":
+    """
+          Cadastrar um novo usuario
+          :return: Cadastrar novo usuario
 
-        if (not request.form['form_nome'] or not request.form['form_cpf']
-                or not request.form['form_endereco']):
-            print('teste')
-            return jsonify({"error": "Preencher todos os campos"})
+          ## Resposta (JSON)
+              json
+          {
+            resultado = [{
+            "nome": nome,
+            "cpf": cpf,
+            "endereco": endereco,
+            {"success": "Usuario cadastrado com sucesso!"}]
+            return jsonify(resultado)
+            }
+    """
+    try:
+        dados_usuario = request.get_json()
+        # print(dados_usuario)
+        # print(dados_usuario["cpf"])
+        # quando clicar no botao de salva
+        if not "cpf" in dados_usuario or not "nome" in dados_usuario or not "endereco" in dados_usuario:
+            return jsonify({
+                'error': 'Campo inexistente'
+            })
+
+        if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "":
+            return jsonify({
+                "error": "Preencher todos os campos"
+            })
+
+
         else:
-            nome = request.form['form_nome']
-            cpf = request.form['form_cpf']
-            endereco = request.form['form_endereco']
+            nome = dados_usuario['nome']
+            cpf = dados_usuario['cpf']
+            endereco = dados_usuario['endereco']
+
             form_novo_usuario = Usuarios(nome=nome,
                                          cpf=cpf,
                                          endereco=endereco,
@@ -172,57 +309,112 @@ def criar_usuario():
             form_novo_usuario.save()
             # db_session.close()
             # return jsonify({ })
-
+            resultado = [{
+                "nome": nome,
+                "cpf": cpf,
+                "endereco": endereco,
+            },
+                {"success": "Usuario cadastrado com sucesso!"}]
             # dentro do url sempre chamar função
-
-            return jsonify({
-                "success": "Usuario cadastrado com sucesso!",
-                "nome": form_novo_usuario.nome,
-                "cpf": form_novo_usuario.cpf,
-                "endereco": form_novo_usuario.endereco,
-            })
+            return jsonify(resultado)
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/novo_emprestimo', methods=['POST'])
 def criar_emprestimo():
-    # quando clicar no botao de salva
-    if request.method == "POST":
+    """
+           Cadastrar um novo emprestimo
+           :return: Cadastrar novo emprestimo
 
-        if (not request.form['form_data_de_emprestimo'] or not request.form['form_data_de_devolucao']
-                or not request.form['form_livro_emprestado_id'] or not request.form['form_usuario_emprestado_id']):
-            print('teste')
-            return jsonify({"error": "Preencher todos os campos"})
+           ## Resposta (JSON)
+               json
+           {
+              resultado = [{
+                "data_de_emprestimo":  data_de_emprestimo,
+                "data_de_devolucao": data_de_devolucao,
+                "livro_emprestado_id": livro_emprestado_id,
+                "usuario_emprestado_id": usuario_emprestado_id,
+                {"success": "Empréstimo cadastrado com sucesso!"}]
+                return jsonify(resultado)
+     """
+    try:
+        dados_emprestimo = request.get_json()
+
+        if (not "data_de_emprestimo" in dados_emprestimo or not "data_de_devolucao" in dados_emprestimo
+                or not "livro_emprestado_id" in dados_emprestimo or not "usuario_emprestado_id" in dados_emprestimo):
+            return jsonify({
+                'error': 'Campo inexistente'
+            })
+
+        if (dados_emprestimo["data_de_emprestimo"] == "" or dados_emprestimo["data_de_devolucao"] == "" or
+                dados_emprestimo["livro_emprestado_id"] == "" or dados_emprestimo["usuario_emprestado_id"] == ""):
+            return jsonify({
+                "error": "Preencher todos os campos"
+            })
+
+        data_de_emprestimo = dados_emprestimo['data_de_emprestimo']
+        data_de_devolucao = dados_emprestimo['data_de_devolucao']
+        livro_emprestado_id = dados_emprestimo['livro_emprestado_id']
+        usuario_emprestado_id = dados_emprestimo['usuario_emprestado_id']
+
+        livros_disponiveis = select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
+        lista_livros_disponiveis = db_session.execute(livros_disponiveis).scalar()
+
+        print(lista_livros_disponiveis)
+
+        # first é para pegar o primeiro da lista
+        # quando clicar no botao de salva
+        if lista_livros_disponiveis  != None:
+            return jsonify({
+                "error": "Livro já cadastrado!"
+            })
+
+        usuario_resultado = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
+        print(usuario_resultado)
+        # verifica se existe
+        if usuario_resultado:
+            return jsonify({
+                "error": "Usuário não encontrado!"
+            })
+
+        if not usuario:
+            return jsonify({
+                "error": "Usuário não encontrado!"
+            })
+        if not livro:
+            return jsonify({
+                'error': 'Este livro não existe'
+            })
+
         else:
-            data_de_emprestimo = request.form['form_data_de_emprestimo']
-            data_de_devolucao = request.form['form_data_de_devolucao']
-            livro_emprestado_id = request.form['form_livro_emprestado_id']
-            usuario_emprestado_id = request.form['form_usuario_emprestado_id']
             form_novo_emprestimo = Emprestimos(data_de_emprestimo=data_de_emprestimo,
                                                data_de_devolucao=data_de_devolucao,
                                                livro_emprestado_id=int(livro_emprestado_id),
                                                usuario_emprestado_id=int(usuario_emprestado_id)
-
                                                )
             print(form_novo_emprestimo)
             form_novo_emprestimo.save()
-            # db_session.close()
-            # return jsonify({ })
 
-            # dentro do url sempre chamar função
-
-            return jsonify({
-                "success": "Usuario cadastrado com sucesso!",
-                "data_de_emprestimo": data_de_emprestimo,
+            resultado = [{
+                "data_de_emprestimo":  data_de_emprestimo,
                 "data_de_devolucao": data_de_devolucao,
-                "livro_emprestado_id": int(livro_emprestado_id),
-                "usuario_emprestado_id": int(usuario_emprestado_id)
+                "livro_emprestado_id": livro_emprestado_id,
+                "usuario_emprestado_id": usuario_emprestado_id,
+            },
+                {"success": "Empréstimo cadastrado com sucesso!"}]
+            # dentro do url sempre chamar função
+            return jsonify(resultado)
 
-            })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/editar_livro/<id_livro>', methods=['PUT'])
 def editar_livro(id_livro):
     try:
+        dados_editar_livro = request.get_json()
+
         # busca de acordo com o id, usando o db_session
         livro_resultado = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
         print(livro_resultado)
@@ -231,45 +423,45 @@ def editar_livro(id_livro):
             return jsonify({
                 "error": "Livro não encontrado"
             })
-            # valida os dados recebidos
-        if not request.form.get('form_titulo'):
+
+        if not 'titulo' in dados_editar_livro or not 'autor' in dados_editar_livro or not 'ISBN' in dados_editar_livro or not 'ISBN' in dados_editar_livro:
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_autor'):
+                'error': 'Campo inexistente'
+            })
+
+        if dados_editar_livro['titulo'] == "" or dados_editar_livro['autor'] == "" or dados_editar_livro['ISBN'] == "" or dados_editar_livro[
+            'resumo'] == "":
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_ISBN'):
-            return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_resumo'):
-            return jsonify({
-                "error": "Preencher campo"})
+                "error": "Preencher todos os campos"
+            })
+
         else:
             # atualiza os dados
-            livro_resultado.titulo = request.form.get('form_titulo')
-            livro_resultado.autor = request.form.get('form_autor')
-            livro_resultado.isbn = request.form.get('form_ISBN')
-            livro_resultado.resumo = request.form.get('form_resumo')
+            livro_resultado.titulo = dados_editar_livro['titulo']
+            livro_resultado.autor = dados_editar_livro['autor']
+            livro_resultado.isbn = dados_editar_livro['ISBN']
+            livro_resultado.resumo = dados_editar_livro['resumo']
             # salva os dados alterados
             livro_resultado.save()
 
-            return jsonify({
-                "sucess": "Livro atualizado com sucesso",
-                'titulo': livro_resultado.titulo,
-                'autor': livro_resultado.autor,
-                'ISBN': livro_resultado.ISBN,
-                'resumo': livro_resultado.resumo,
+            resultado = [{
+                "titulo": livro_resultado.titulo,
+                "autor": livro_resultado.autor,
+                "ISBN": livro_resultado.isbn,
+                "resumo": livro_resultado.resumo,
+            },
+                {"success": "Livro editado com sucesso!"}]
+            # dentro do url sempre chamar função
+            return jsonify(resultado)
 
-            })
-    except ValueError:
-        return jsonify({
-            'error': 'Valor inserido invalido'
-        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/editar_usuario/<id_usuario>', methods=['PUT'])
 def editar_usuario(id_usuario):
     try:
+        dados_editar_usuario= request.get_json()
         # busca de acordo com o id, usando o db_session
         usuario_resultado = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
         print(usuario_resultado)
@@ -279,40 +471,41 @@ def editar_usuario(id_usuario):
                 "error": "Livro não encontrado"
             })
 
-        # valida os dados recebidos
-        if not request.form.get('form_nome'):
+        # verificação dos dados
+        if not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario:
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_cpf'):
+                'error': 'Campo inexistente'
+            })
+
+        if dados_editar_usuario["cpf"] == "" or dados_editar_usuario["nome"] == "" or dados_editar_usuario["endereco"] == "":
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_endereco'):
-            return jsonify({
-                "error": "Preencher campo"})
+                "error": "Preencher todos os campos"
+            })
+
         else:
             # atualiza os dados
-            usuario_resultado.nome = request.form.get('form_nome')
-            usuario_resultado.cpf = request.form.get('form_cpf')
-            usuario_resultado.endereco = request.form.get('form_endereco')
-
+            usuario_resultado.nome = dados_editar_usuario['nome']
+            usuario_resultado.cpf = dados_editar_usuario['cpf']
+            usuario_resultado.endereco = dados_editar_usuario['endereco']
+            usuario_resultado.save()
             # salva os dados alterados
+            resultado = [{
+                "nome": usuario_resultado.nome,
+                "cpf": usuario_resultado.cpf,
+                "endereco": usuario_resultado.endereco
+            },
+                {"success": "Usuario editado com sucesso!"}]
+            # dentro do url sempre chamar função
+            return jsonify(resultado)
 
-            return jsonify({
-                "sucess": "Usuario atualizado com sucesso",
-                'nome': usuario_resultado.nome,
-                'cpf': usuario_resultado.cpf,
-                'endereco': usuario_resultado.endereco,
-
-            })
-    except ValueError:
-        return jsonify({
-            'error': 'Valor inserido invalido'
-        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/editar_emprestimo/<id_emprestimo>', methods=['PUT'])
 def editar_emprestimo(id_emprestimo):
     try:
+        dados_editar_emprestimo= request.get_json()
         # busca de acordo com o id, usando o db_session
         emprestimo_resultado = db_session.execute(select(Emprestimos).filter_by(id=int(id_emprestimo))).scalar()
         print(emprestimo_resultado)
@@ -322,43 +515,39 @@ def editar_emprestimo(id_emprestimo):
                 "error": "Emprestimo não encontrado"
             })
 
-        # valida os dados recebidos
-        if not request.form.get('form_data_de_emprestimo'):
+        if not "data_de_emprestimo" in dados_editar_emprestimo or not "data_de_devolucao" in dados_editar_emprestimo  or not "livro_emprestado_id" in dados_editar_emprestimo or not "usuario_emprestado_id" in dados_editar_emprestimo:
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_data_de_devolucao'):
+                'error': 'Campo inexistente'
+            })
+
+        if (dados_editar_emprestimo["data_de_emprestimo"] == "" or dados_editar_emprestimo["data_de_devolucao"] == "" or
+                dados_editar_emprestimo["livro_emprestado_id"] == "" or dados_editar_emprestimo["usuario_emprestado_id"] == ""):
             return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_livro_emprestado_id'):
-            return jsonify({
-                "error": "Preencher campo"})
-        elif not request.form.get('form_usuario_emprestado_id'):
-            return jsonify({
-                "error": "Preencher campo"
+                "error": "Preencher todos os campos"
             })
 
         else:
             # atualiza os dados
-            emprestimo_resultado.data_de_emprestimo = request.form.get('form_data_de_emprestimo')
-            emprestimo_resultado.data_de_devolucao = request.form.get('form_data_de_devolucao')
-            emprestimo_resultado.livro_emprestado_id = request.form.get('form_livro_emprestado_id')
-            emprestimo_resultado.usuario_emprestado_id = request.form.get('form_usuario_emprestado_id')
-
+            emprestimo_resultado.data_de_emprestimo = dados_editar_emprestimo['data_de_emprestimo']
+            emprestimo_resultado.data_de_devolucao = dados_editar_emprestimo['data_de_devolucao']
+            emprestimo_resultado.livro_emprestado_id = dados_editar_emprestimo['livro_emprestado_id']
+            emprestimo_resultado.usuario_emprestado_id = dados_editar_emprestimo['usuario_emprestado_id']
             # salva os dados alterados
             emprestimo_resultado.save()
 
-            return jsonify({
-                "sucess": "Emprestimo atualizado com sucesso",
-                'data de emprestimo': emprestimo_resultado.data_de_emprestimo,
-                'data de devolução': emprestimo_resultado.data_de_devolucao,
-                'livro emprestado id': emprestimo_resultado.livro_emprestado_id,
-                'usuario emprestado': emprestimo_resultado.usuario_emprestado_id,
+            resultado = [{
+                "data_de_emprestimo": emprestimo_resultado.data_de_emprestimo,
+                "data_de_devolucao": emprestimo_resultado.data_de_devolucao,
+                "livro_emprestado_id": emprestimo_resultado.livro_emprestado_id,
+                "usuario_emprestado_id": emprestimo_resultado.usuario_emprestado_id,
+            },
+                {"success": "Empréstimo editado com sucesso!"}]
+            # dentro do url sempre chamar função
+            return jsonify(resultado)
 
-            })
-    except ValueError:
-        return jsonify({
-            'error': 'Valor inserido invalido'
-        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 
 
 @app.route('/get_usuario/<id_usuario>', methods=['GET'])
@@ -408,7 +597,6 @@ def get_livro(id_livro):
             'error': 'Valor inserido invalido'
         })
 
-
 # @app.route('/get_emprestimo/<id_emprestimo>', methods=['GET'])
 # def get_emprestimo(id_emprestimo):
 #     emprestimos = db_session.execute(select(Emprestimos).filter_by(id=int(id_emprestimo))).scalar()
@@ -424,7 +612,6 @@ def get_livro(id_livro):
 #         'Livros emprestados': Emprestimos.livro_emprestado_id,
 #         'Usuário emprestimo': Emprestimos.usuario_emprestado_id,
 #     })
-
 
 @app.route('/deletar_usuario/<id_usuario>', methods=['DELETE'])
 def deletar_usuario(id_usuario):
