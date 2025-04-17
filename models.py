@@ -3,19 +3,16 @@ from sqlite3 import Date
 
 from flask import Flask
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship, declarative_base
 from datetime import datetime
 
 
 engine = create_engine('sqlite:///nome.sqlite3')
-#db_session = scoped_session(sessionmaker(bind=engine))- ANTIGO
-session_local = sessionmaker(bind=engine)
-
+db_session = scoped_session(sessionmaker(bind=engine))
 
 
 Base = declarative_base()
-# Base.query = db_session.query_property()
+Base.query = db_session.query_property()
 
 class Livro(Base):
     __tablename__ = 'LIVROS'
@@ -31,16 +28,12 @@ class Livro(Base):
                 format(self.titulo, self.autor, self.ISBN, self.resumo))
 
 
-    def save(self, db_session):
-        try:
-            db_session.add(self)
-            db_session.commit()
-        except SQLAlchemyError:
-            db_session.rollback() # VOLTAR PARA A INFORMAÇÃO PARA O ÚLTIMO MOMENTO QUE ESTAVA SALVA
-            raise
+    def save(self):
+        db_session.add(self)
+        db_session.commit()
 
     # função para deletar
-    def delete_livro(self, db_session):
+    def delete_livro(self):
         db_session.delete(self)
         db_session.commit()
 
@@ -67,15 +60,11 @@ class Usuarios(Base):
         return ('<Usuario: nome: {} cpf: {} endereco: {}'.
                 format(self.nome, self.cpf, self.endereco))
 
-    def save(self, db_session):
-        try:
-            db_session.add(self)
-            db_session.commit()
-        except SQLAlchemyError:
-            db_session.rollback()  # VOLTAR PARA A INFORMAÇÃO PARA O ÚLTIMO MOMENTO QUE ESTAVA SALVA
-            raise
+    def save(self):
+        db_session.add(self)
+        db_session.commit()
 
-    def delete_usuario(self, db_session):
+    def delete_usuario(self):
         db_session.delete(self)
         db_session.commit()
 
@@ -106,15 +95,11 @@ class Emprestimos(Base):
                 ' livro_emprestado_id: {} usuario_emprestado_id:'.
                 format(self.data_de_emprestimo, self.data_de_devolucao, self.livro_emprestado_id, self.usuario_emprestado_id,))
 
-    def save(self, db_session):
-        try:
-            db_session.add(self)
-            db_session.commit()
-        except SQLAlchemyError:
-            db_session.rollback()  # VOLTAR PARA A INFORMAÇÃO PARA O ÚLTIMO MOMENTO QUE ESTAVA SALVA
-            raise
+    def save(self):
+        db_session.add(self)
+        db_session.commit()
 
-    def delete_emprestimo(self, db_session):
+    def delete_emprestimo(self):
         db_session.delete(self)
         db_session.commit()
 
