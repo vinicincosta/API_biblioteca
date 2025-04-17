@@ -324,94 +324,102 @@ def criar_usuario():
 @app.route('/novo_emprestimo', methods=['POST'])
 def criar_emprestimo():
     """
-           Cadastrar um novo emprestimo
-           :return: Cadastrar novo emprestimo
+            Cadastrar um novo empréstimo
+            :return: Cadastrar novo empréstimo
 
-           ## Resposta (JSON)
-               json
-           {
+            ## Resposta (JSON)
+                json
+            {
               resultado = [{
-                "data_de_emprestimo":  data_de_emprestimo,
+                "data_de_emprestimo": data_de_emprestimo,
                 "data_de_devolucao": data_de_devolucao,
                 "livro_emprestado_id": livro_emprestado_id,
                 "usuario_emprestado_id": usuario_emprestado_id,
-                {"success": "Empréstimo cadastrado com sucesso!"}]
-                return jsonify(resultado)
-     """
+              }]
+      """
+
     try:
         dados_emprestimo = request.get_json()
 
         if (not "data_de_emprestimo" in dados_emprestimo or not "data_de_devolucao" in dados_emprestimo
                 or not "livro_emprestado_id" in dados_emprestimo or not "usuario_emprestado_id" in dados_emprestimo):
-            return jsonify({
-                'error': 'Campo inexistente'
-            })
+            return jsonify({'error': 'Campo inexistente'})
 
         if (dados_emprestimo["data_de_emprestimo"] == "" or dados_emprestimo["data_de_devolucao"] == "" or
                 dados_emprestimo["livro_emprestado_id"] == "" or dados_emprestimo["usuario_emprestado_id"] == ""):
-            return jsonify({
-                "error": "Preencher todos os campos"
-            })
+            return jsonify({"error": "Preencher todos os campos"})
 
         data_de_emprestimo = dados_emprestimo['data_de_emprestimo']
         data_de_devolucao = dados_emprestimo['data_de_devolucao']
-        livro_emprestado_id = dados_emprestimo['livro_emprestado_id']
-        usuario_emprestado_id = dados_emprestimo['usuario_emprestado_id']
+        livro_emprestado_id = int(dados_emprestimo['livro_emprestado_id'])
+        usuario_emprestado_id = int(dados_emprestimo['usuario_emprestado_id'])
 
-        livros_disponiveis = select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
-        lista_livros_disponiveis = db_session.execute(livros_disponiveis).scalar()
+        # Verificar se o livro já está emprestado
+        livro_ja_emprestado = db_session.execute(
+            select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
+        ).scalar()
 
-        print(lista_livros_disponiveis)
+        if livro_ja_emprestado:
+            return jsonify({"error": "Livro já cadastrado!"})
 
-        # first é para pegar o primeiro da lista
-        # quando clicar no botao de salva
-        if lista_livros_disponiveis  != None:
-            return jsonify({
-                "error": "Livro já cadastrado!"
-            })
-
-        usuario_resultado = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
-        print(usuario_resultado)
-        # verifica se existe
-        if usuario_resultado:
-            return jsonify({
-                "error": "Usuário não encontrado!"
-            })
+        # Verificar se o usuário existe
+        usuario = db_session.execute(
+            select(Usuarios).where(Usuarios.id == usuario_emprestado_id)
+        ).scalar()
 
         if not usuario:
-            return jsonify({
-                "error": "Usuário não encontrado!"
-            })
+            return jsonify({"error": "Usuário não encontrado!"})
+
+        # Verificar se o livro existe
+        livro = db_session.execute(
+            select(Livro).where(Livro.id == livro_emprestado_id)
+        ).scalar()
+
         if not livro:
-            return jsonify({
-                'error': 'Este livro não existe'
-            })
+            return jsonify({'error': 'Este livro não existe'})
 
-        else:
-            form_novo_emprestimo = Emprestimos(data_de_emprestimo=data_de_emprestimo,
-                                               data_de_devolucao=data_de_devolucao,
-                                               livro_emprestado_id=int(livro_emprestado_id),
-                                               usuario_emprestado_id=int(usuario_emprestado_id)
-                                               )
-            print(form_novo_emprestimo)
-            form_novo_emprestimo.save()
+        # Criar o empréstimo
+        novo_emprestimo = Emprestimos(
+            data_de_emprestimo=data_de_emprestimo,
+            data_de_devolucao=data_de_devolucao,
+            livro_emprestado_id=livro_emprestado_id,
+            usuario_emprestado_id=usuario_emprestado_id
+        )
 
-            resultado = [{
-                "data_de_emprestimo":  data_de_emprestimo,
+        novo_emprestimo.save()
+
+        resultado = [
+            {
+                "data_de_emprestimo": data_de_emprestimo,
                 "data_de_devolucao": data_de_devolucao,
                 "livro_emprestado_id": livro_emprestado_id,
                 "usuario_emprestado_id": usuario_emprestado_id,
             },
-                {"success": "Empréstimo cadastrado com sucesso!"}]
-            # dentro do url sempre chamar função
-            return jsonify(resultado)
+            {"success": "Empréstimo cadastrado com sucesso!"}
+        ]
+
+        return jsonify(resultado)
 
     except Exception as e:
         return jsonify({"error": str(e)})
 
-
 @app.route('/editar_livro/<id_livro>', methods=['PUT'])
 def editar_livro(id_livro):
+    """
+                editar um livro
+                :return: Editar livro
+                :param id_livro:id_livro
+
+                ## Resposta (JSON)
+                    json
+                {
+                  resultado = [{
+                        "titulo": livro_resultado.titulo,
+                        "autor": livro_resultado.autor,
+                        "ISBN": livro_resultado.isbn,
+                        "resumo": livro_resultado.resumo,
+                  }
+          """
     try:
         dados_editar_livro = request.get_json()
 
@@ -460,6 +468,21 @@ def editar_livro(id_livro):
 
 @app.route('/editar_usuario/<id_usuario>', methods=['PUT'])
 def editar_usuario(id_usuario):
+    """
+                   editar usuario
+                   :return: Editar Usuario
+                   :param id_usuario:id_usuario
+
+                   ## Resposta (JSON)
+                       json
+                   {
+                     resultado = [{
+                        "nome": usuario_resultado.nome,
+                        "cpf": usuario_resultado.cpf,
+                        "endereco": usuario_resultado.endereco
+                     }
+             """
+
     try:
         dados_editar_usuario= request.get_json()
         # busca de acordo com o id, usando o db_session
@@ -504,6 +527,21 @@ def editar_usuario(id_usuario):
 
 @app.route('/editar_emprestimo/<id_emprestimo>', methods=['PUT'])
 def editar_emprestimo(id_emprestimo):
+    """
+           editar emprestimo
+           :return: Editar emprestimo
+           :param id_emprestimo:id_emprestimo
+
+           ## Resposta (JSON)
+               json
+           {
+             resultado = [{
+                   "data_de_emprestimo": emprestimo_resultado.data_de_emprestimo,
+                    "data_de_devolucao": emprestimo_resultado.data_de_devolucao,
+                    "livro_emprestado_id": emprestimo_resultado.livro_emprestado_id,
+                    "usuario_emprestado_id": emprestimo_resultado.usuario_emprestado_id,
+             }
+     """
     try:
         dados_editar_emprestimo= request.get_json()
         # busca de acordo com o id, usando o db_session
@@ -552,6 +590,22 @@ def editar_emprestimo(id_emprestimo):
 
 @app.route('/get_usuario/<id_usuario>', methods=['GET'])
 def get_usuario(id_usuario):
+    """
+              buscar usuario
+              :return: Buscar usuario
+              :param id_usuario:id_usuario
+
+              ## Resposta (JSON)
+                  json
+              {
+                resultado = [{
+                   'id': usuario.id,
+                    'nome': usuario.nome,
+                    'cpf': usuario.cpf,
+                    'endereco': usuario.endereco,
+                }
+    """
+
     try:
         usuario = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
 
@@ -575,6 +629,24 @@ def get_usuario(id_usuario):
 
 @app.route('/get_livro/<id_livro>', methods=['GET'])
 def get_livro(id_livro):
+    """
+                  buscar livro
+                  :return: Buscar livro
+                  :param id_livro:id_livro
+
+                  ## Resposta (JSON)
+                      json
+                  {
+                    resultado = [{
+                    'id': livro.id,
+                    'Titulo': livro.titulo,
+                    'Autor': livro.autor,
+                    'resumo': livro.resumo,
+                    'isbn': livro.ISBN,
+
+                    }
+    """
+
     try:
         livro = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
 
