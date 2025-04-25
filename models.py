@@ -7,8 +7,27 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship, declarative_base
 from datetime import datetime
 
+# VERCEL
+from dotenv import load_dotenv
+import os # criar variavel de ambiente '.env'
+import configparser # criar arquivo de configuração 'config.ini'
 
-engine = create_engine('sqlite:///nome.sqlite3')
+# Configurar banco vercel
+# Ler variavel de ambiente
+load_dotenv()
+# Carregue as configurações do banco de dados
+url_ = os.environ.get('DATABASE_URL')
+print(f'modo1: {url_}')
+
+# Carregue o arquivo de configuração
+config = configparser.ConfigParser()
+config.read('config.ini')
+#Obtenha as configurações do banco de dados
+database_url = config['database']['url']
+print(f'modo2:{database_url}')
+
+#engine = create_engine('sqlite:///nome.sqlite3')
+engine = create_engine(database_url)
 #db_session = scoped_session(sessionmaker(bind=engine))- ANTIGO
 session_local = sessionmaker(bind=engine)
 

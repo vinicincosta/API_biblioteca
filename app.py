@@ -144,6 +144,7 @@ def historico_emprestimos(id_usuario):
             })
 
         if not id_usuari:
+
             return jsonify({
                 "error": "Este usuario não existe"
             })
@@ -782,6 +783,18 @@ def get_livro(id_livro):
 
 @app.route('/deletar_usuario/<id_usuario>', methods=['DELETE'])
 def deletar_usuario(id_usuario):
+    """
+          deletar usuario
+          :return: deletar usuario
+          :param id_usuario:id_usuario
+
+          ## Resposta (JSON)
+              json
+          {
+             return jsonify({'success': "Usuario deletado com sucesso"})
+
+            }
+        """
     usuario_resultado = db_session.execute(select(Usuarios).filter_by(id=id_usuario)).scalar()
 
     if not usuario_resultado:
@@ -792,6 +805,17 @@ def deletar_usuario(id_usuario):
 
 @app.route('/deletar_livro/<id_livro>', methods=['DELETE'])
 def deletar_livro(id_livro):
+    """
+             deletar livro
+             :return: deletar livro
+             :param id_livro:id_livro
+
+             ## Resposta (JSON)
+                 json
+             {
+                return jsonify({'success': "Livro deletado com sucesso"})
+               }
+           """
     livro_resultado = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
 
     if not livro_resultado:
@@ -802,3 +826,36 @@ def deletar_livro(id_livro):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+# create table EMPRESTIMOS
+# (
+#     id                    SERIAL not null
+#         primary key,
+#     data_de_emprestimo    VARCHAR not null,
+#     data_de_devolucao     VARCHAR not null,
+#     livro_emprestado_id   INTEGER
+#         references LIVROS(id),
+#     usuario_emprestado_id INTEGER
+#         references USUARIOS(id)
+# );
+
+
+# create table LIVROS
+# (
+#     id     SERIAL not null
+#         primary key,
+#     titulo TEXT not null,
+#     autor  TEXT not null,
+#     ISBN   INTEGER not null,
+#     resumo TEXT not null
+# );
+#
+# create table USUARIOS
+# (
+#     id       SERIAL not null
+#         primary key,
+#     nome     VARCHAR not null,
+#     cpf      VARCHAR not null,
+#     endereco VARCHAR not null
+# );
