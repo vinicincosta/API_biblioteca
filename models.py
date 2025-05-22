@@ -26,8 +26,8 @@ config.read('config.ini')
 database_url = config['database']['url']
 print(f'modo2:{database_url}')
 
-#engine = create_engine('sqlite:///nome.sqlite3')
-engine = create_engine(database_url)
+engine = create_engine('sqlite:///nome.sqlite3')
+# engine = create_engine(database_url)
 #db_session = scoped_session(sessionmaker(bind=engine))- ANTIGO
 session_local = sessionmaker(bind=engine)
 

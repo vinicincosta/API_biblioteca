@@ -1,14 +1,11 @@
 from sys import exception
-
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from models import *
 
-app = Flask(__name__)
-
-
+app = Flask (__name__)
 @app.route('/')
 def pagina_inicial():
     return 'Pagina inicial (API BIBLIOTECA)'
@@ -80,7 +77,7 @@ def livros_disponiveis():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/livros_emprestados', methods=['GET'])
 def livros_emprestados():
     """
@@ -113,7 +110,7 @@ def livros_emprestados():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/historico_emprestimos/<int:id_usuario>', methods=['GET'])
 def historico_emprestimos(id_usuario):
     """
@@ -172,7 +169,7 @@ def historico_emprestimos(id_usuario):
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/usuario', methods=['GET'])
 def usuario():
     """
@@ -204,7 +201,7 @@ def usuario():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/emprestimo', methods=['GET'])
 def emprestimo():
     """
@@ -236,7 +233,7 @@ def emprestimo():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/novo_livro', methods=['POST'])
 def criar_livro():
     """
@@ -280,7 +277,7 @@ def criar_livro():
                                     autor=autor,
                                     ISBN=int(ISBN),
                                     resumo=resumo
-                                    )
+                                    ),
             print(form_novo_livro)
             form_novo_livro.save(db_session)
 
@@ -290,7 +287,7 @@ def criar_livro():
                 "ISBN": ISBN,
                 "resumo": resumo
             },
-                {"success": "Livro cadastrado com sucesso!"}]
+                {"success": "Livro cadastrado com sucesso!"}], 201
             # dentro do url sempre chamar função
             return jsonify(resultado)
 
@@ -300,6 +297,7 @@ def criar_livro():
         db_session.close()
 
 
+# Rota Bloqueada
 @app.route('/novo_usuario', methods=['POST'])
 def criar_usuario():
     """
@@ -342,7 +340,7 @@ def criar_usuario():
             form_novo_usuario = Usuarios(nome=nome,
                                          cpf=cpf,
                                          endereco=endereco,
-                                         )
+                                         ), 201
 
             print(form_novo_usuario)
             cpf_existente = db_session.execute(select(Usuarios).filter_by(cpf=int(cpf))).scalar()
@@ -355,8 +353,10 @@ def criar_usuario():
                 "nome": nome,
                 "cpf": cpf,
                 "endereco": endereco,
+
+
             },
-                {"success": "Usuario cadastrado com sucesso!"}]
+                {"success": "Usuario cadastrado com sucesso!"}], 201
             # dentro do url sempre chamar função
             return jsonify(resultado)
     except Exception as e:
@@ -364,7 +364,7 @@ def criar_usuario():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/novo_emprestimo', methods=['POST'])
 def criar_emprestimo():
     """
@@ -449,7 +449,7 @@ def criar_emprestimo():
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/editar_livro/<id_livro>', methods=['PUT'])
 def editar_livro(id_livro):
     """
@@ -521,7 +521,7 @@ def editar_livro(id_livro):
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/editar_usuario/<id_usuario>', methods=['PUT'])
 def editar_usuario(id_usuario):
     """
@@ -587,7 +587,7 @@ def editar_usuario(id_usuario):
     finally:  # Finaliza a sessão
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/editar_emprestimo/<id_emprestimo>', methods=['PUT'])
 def editar_emprestimo(id_emprestimo):
     """
@@ -678,7 +678,7 @@ def editar_emprestimo(id_emprestimo):
     finally:  # Finaliza a sessão
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/get_usuario/<id_usuario>', methods=['GET'])
 def get_usuario(id_usuario):
     """
@@ -719,7 +719,7 @@ def get_usuario(id_usuario):
     finally:
         db_session.close()
 
-
+# Rota Bloqueada
 @app.route('/get_livro/<id_livro>', methods=['GET'])
 def get_livro(id_livro):
     """
@@ -825,7 +825,7 @@ def deletar_livro(id_livro):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)
 
 
 # create table EMPRESTIMOS
