@@ -277,19 +277,20 @@ def criar_livro():
                                     autor=autor,
                                     ISBN=int(ISBN),
                                     resumo=resumo
-                                    ),
+                                    )
             print(form_novo_livro)
             form_novo_livro.save(db_session)
 
-            resultado = [{
+            resultado = {
+                "id": form_novo_livro.id,
                 "titulo": titulo,
                 "autor": autor,
                 "ISBN": ISBN,
-                "resumo": resumo
-            },
-                {"success": "Livro cadastrado com sucesso!"}], 201
+                "resumo": resumo,
+                "success": "Livro cadastrado com sucesso!"
+            }
             # dentro do url sempre chamar função
-            return jsonify(resultado)
+            return jsonify(resultado), 201
 
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -340,7 +341,7 @@ def criar_usuario():
             form_novo_usuario = Usuarios(nome=nome,
                                          cpf=cpf,
                                          endereco=endereco,
-                                         ), 201
+                                         )
 
             print(form_novo_usuario)
             cpf_existente = db_session.execute(select(Usuarios).filter_by(cpf=int(cpf))).scalar()
@@ -349,16 +350,15 @@ def criar_usuario():
             form_novo_usuario.save(db_session)
             # db_session.close()
             # return jsonify({ })
-            resultado = [{
+            resultado = {
+                "id": form_novo_usuario.id,
                 "nome": nome,
                 "cpf": cpf,
                 "endereco": endereco,
-
-
-            },
-                {"success": "Usuario cadastrado com sucesso!"}], 201
+                "success": "Usuario cadastrado com sucesso!"
+            }
             # dentro do url sempre chamar função
-            return jsonify(resultado)
+            return jsonify(resultado), 201
     except Exception as e:
         return jsonify({"error": str(e)})
     finally:
@@ -387,11 +387,11 @@ def criar_emprestimo():
 
         if (not "data_de_emprestimo" in dados_emprestimo or not "data_de_devolucao" in dados_emprestimo
                 or not "livro_emprestado_id" in dados_emprestimo or not "usuario_emprestado_id" in dados_emprestimo):
-            return jsonify({'error': 'Campo inexistente'})
+            return jsonify({'error': 'Campo inexistente'}),400
 
         if (dados_emprestimo["data_de_emprestimo"] == "" or dados_emprestimo["data_de_devolucao"] == "" or
                 dados_emprestimo["livro_emprestado_id"] == "" or dados_emprestimo["usuario_emprestado_id"] == ""):
-            return jsonify({"error": "Preencher todos os campos"})
+            return jsonify({"error": "Preencher todos os campos"}),400
 
         data_de_emprestimo = dados_emprestimo['data_de_emprestimo']
         data_de_devolucao = dados_emprestimo['data_de_devolucao']
@@ -404,7 +404,7 @@ def criar_emprestimo():
         ).scalar()
 
         if livro_ja_emprestado:
-            return jsonify({"error": "Livro já cadastrado!"})
+            return jsonify({"error": "Livro já cadastrado!"}),400
 
         # Verificar se o usuário existe
         usuario = db_session.execute(
@@ -412,7 +412,7 @@ def criar_emprestimo():
         ).scalar()
 
         if not usuario:
-            return jsonify({"error": "Usuário não encontrado!"})
+            return jsonify({"error": "Usuário não encontrado!"}),400
 
         # Verificar se o livro existe
         livro = db_session.execute(
@@ -420,7 +420,7 @@ def criar_emprestimo():
         ).scalar()
 
         if not livro:
-            return jsonify({'error': 'Este livro não existe'})
+            return jsonify({'error': 'Este livro não existe'}),400
 
         # Criar o empréstimo
         novo_emprestimo = Emprestimos(
@@ -432,20 +432,20 @@ def criar_emprestimo():
 
         novo_emprestimo.save(db_session)
 
-        resultado = [
-            {
+        resultado = {
                 "data_de_emprestimo": data_de_emprestimo,
                 "data_de_devolucao": data_de_devolucao,
                 "livro_emprestado_id": livro_emprestado_id,
                 "usuario_emprestado_id": usuario_emprestado_id,
-            },
-            {"success": "Empréstimo cadastrado com sucesso!"}
-        ]
+                "success": "Empréstimo cadastrado com sucesso!"
+            }
 
-        return jsonify(resultado)
+
+
+        return jsonify(resultado), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}),400
     finally:
         db_session.close()
 
@@ -478,19 +478,19 @@ def editar_livro(id_livro):
         if not livro_resultado:
             return jsonify({
                 "error": "Livro não encontrado"
-            })
+            }), 400
 
         if not 'titulo' in dados_editar_livro or not 'autor' in dados_editar_livro or not 'ISBN' in dados_editar_livro or not 'ISBN' in dados_editar_livro:
             return jsonify({
                 'error': 'Campo inexistente'
-            })
+            }), 400
 
         if dados_editar_livro['titulo'] == "" or dados_editar_livro['autor'] == "" or dados_editar_livro[
             'ISBN'] == "" or dados_editar_livro[
             'resumo'] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
-            })
+            }), 400
 
         else:
             # atualiza os dados
@@ -501,23 +501,25 @@ def editar_livro(id_livro):
             # salva os dados alterados
             livro_resultado.save(db_session)
 
-            resultado = [{
+            resultado = {
+                "id_livro": livro_resultado.id,
                 "titulo": livro_resultado.titulo,
                 "autor": livro_resultado.autor,
                 "ISBN": livro_resultado.isbn,
                 "resumo": livro_resultado.resumo,
-            },
-                {"success": "Livro editado com sucesso!"}]
+                "success": "Livro editado com sucesso!"
+            }
+
             # dentro do url sempre chamar função
-            return jsonify(resultado)
+            return jsonify(resultado), 200
 
     except ValueError:
         return jsonify({
             'error': 'Valor inserido invalido'
-        })
+        }), 400
 
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 400
     finally:
         db_session.close()
 
@@ -547,20 +549,20 @@ def editar_usuario(id_usuario):
         # verifica se existe
         if not usuario_resultado:
             return jsonify({
-                "error": "Livro não encontrado"
-            })
+                "error": "Usuário não encontrado"
+            }),400
 
         # verificação dos dados
         if not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario:
             return jsonify({
                 'error': 'Campo inexistente'
-            })
+            }),400
 
         if dados_editar_usuario["cpf"] == "" or dados_editar_usuario["nome"] == "" or dados_editar_usuario[
             "endereco"] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
-            })
+            }),400
 
         else:
             # atualiza os dados
@@ -569,21 +571,23 @@ def editar_usuario(id_usuario):
             usuario_resultado.endereco = dados_editar_usuario['endereco']
             usuario_resultado.save(db_session)
             # salva os dados alterados
-            resultado = [{
+            resultado = {
+                "id_usuario": usuario_resultado.id,
                 "nome": usuario_resultado.nome,
                 "cpf": usuario_resultado.cpf,
-                "endereco": usuario_resultado.endereco
-            },
-                {"success": "Usuario editado com sucesso!"}]
+                "endereco": usuario_resultado.endereco,
+                "success": "Usuario editado com sucesso!"
+            }
+
             # dentro do url sempre chamar função
-            return jsonify(resultado)
+            return jsonify(resultado), 200
 
     except ValueError:
         return jsonify({
             'error': 'Valor inserido invalido'
-        })
+        }), 400
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 400
     finally:  # Finaliza a sessão
         db_session.close()
 
