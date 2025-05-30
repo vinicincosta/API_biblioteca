@@ -387,11 +387,11 @@ def criar_emprestimo():
 
         if (not "data_de_emprestimo" in dados_emprestimo or not "data_de_devolucao" in dados_emprestimo
                 or not "livro_emprestado_id" in dados_emprestimo or not "usuario_emprestado_id" in dados_emprestimo):
-            return jsonify({'error': 'Campo inexistente'}),400
+            return jsonify({'error': 'Campo inexistente'}), 400
 
         if (dados_emprestimo["data_de_emprestimo"] == "" or dados_emprestimo["data_de_devolucao"] == "" or
                 dados_emprestimo["livro_emprestado_id"] == "" or dados_emprestimo["usuario_emprestado_id"] == ""):
-            return jsonify({"error": "Preencher todos os campos"}),400
+            return jsonify({"error": "Preencher todos os campos"}), 400
 
         data_de_emprestimo = dados_emprestimo['data_de_emprestimo']
         data_de_devolucao = dados_emprestimo['data_de_devolucao']
@@ -404,7 +404,7 @@ def criar_emprestimo():
         ).scalar()
 
         if livro_ja_emprestado:
-            return jsonify({"error": "Livro já cadastrado!"}),400
+            return jsonify({"error": "Livro já cadastrado!"}), 400
 
         # Verificar se o usuário existe
         usuario = db_session.execute(
@@ -412,7 +412,7 @@ def criar_emprestimo():
         ).scalar()
 
         if not usuario:
-            return jsonify({"error": "Usuário não encontrado!"}),400
+            return jsonify({"error": "Usuário não encontrado!"}), 400
 
         # Verificar se o livro existe
         livro = db_session.execute(
@@ -420,14 +420,14 @@ def criar_emprestimo():
         ).scalar()
 
         if not livro:
-            return jsonify({'error': 'Este livro não existe'}),400
+            return jsonify({'error': 'Este livro não existe'}), 400
 
         # Criar o empréstimo
         novo_emprestimo = Emprestimos(
-            data_de_emprestimo=data_de_emprestimo,
-            data_de_devolucao=data_de_devolucao,
-            livro_emprestado_id=livro_emprestado_id,
-            usuario_emprestado_id=usuario_emprestado_id
+            data_de_emprestimo= data_de_emprestimo,
+            data_de_devolucao= data_de_devolucao,
+            livro_emprestado_id= livro_emprestado_id,
+            usuario_emprestado_id= usuario_emprestado_id
         )
 
         novo_emprestimo.save(db_session)
@@ -440,12 +440,10 @@ def criar_emprestimo():
                 "success": "Empréstimo cadastrado com sucesso!"
             }
 
-
-
         return jsonify(resultado), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)}),400
+        return jsonify({"error": str(e)}), 400
     finally:
         db_session.close()
 
@@ -715,7 +713,7 @@ def get_usuario(id_usuario):
             'nome': usuario.nome,
             'cpf': usuario.cpf,
             'endereco': usuario.endereco,
-        })
+        }), 200
     except ValueError:
         return jsonify({
             'error': 'Valor inserido invalido'
