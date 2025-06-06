@@ -994,11 +994,14 @@ def deletar_livro(id_livro):
     return jsonify({'success': "Livro deletado com sucesso"})
 
 
-@app.route('/calcular_devolucao/<data_de_emprestimo>', methods=['GET'])
-def calcular_devolucao(data_de_emprestimo):
+@app.route('/calcular_devolucao/<data_de_emprestimo>+<prazo>', methods=['GET'])
+def calcular_devolucao(data_de_emprestimo,prazo):
     try:
-        prazo = 30
-        data_calculada = datetime.today() + relativedelta(days=prazo)
+
+        data_calculada = datetime.today() + relativedelta(days=int(prazo))
+
+        # print(data_calculada)
+        # print(data_calculada.strftime('%d/%m/%Y'))
 
         return jsonify({
             "devolucao": data_calculada.strftime('%d-%m-%Y'),
@@ -1008,7 +1011,6 @@ def calcular_devolucao(data_de_emprestimo):
         return jsonify({
             "error": e
         }),400
-
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)
