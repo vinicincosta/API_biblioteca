@@ -107,6 +107,44 @@ class Usuarios(Base):
         }
         return dados_usuario
 
+# class Emprestimos(Base):
+#     __tablename__ = 'EMPRESTIMOS'
+#
+#     id = Column(Integer, primary_key=True)
+#     data_de_emprestimo = Column(String, nullable=False)
+#     data_de_devolucao = Column(String, nullable=False)
+#     livro_emprestado_id = Column(Integer, ForeignKey('LIVROS.id'))
+#     livro_emprestado = relationship(Livro)
+#     usuario_emprestado_id = Column(Integer, ForeignKey('USUARIOS.id'))
+#     usuario_emprestado = relationship(Usuarios)
+#
+#
+#     def __repr__(self):
+#         return ('<Emprestimo: data_de_emprestimo: {} data_de_devolucao: {}'
+#                 ' livro_emprestado_id: {} usuario_emprestado_id:'.
+#                 format(self.data_de_emprestimo, self.data_de_devolucao, self.livro_emprestado_id, self.usuario_emprestado_id,))
+#
+#     def save(self, db_session):
+#         try:
+#             db_session.add(self)
+#             db_session.commit()
+#         except SQLAlchemyError:
+#             db_session.rollback()  # VOLTAR PARA A INFORMAÇÃO PARA O ÚLTIMO MOMENTO QUE ESTAVA SALVA
+#             raise
+#
+#     def delete_emprestimo(self, db_session):
+#         db_session.delete(self)
+#         db_session.commit()
+#
+#     def serialize_emprestimo(self):
+#         dados_emprestimo = {
+#             "id_emprestimo": self.id,
+#             "data_de_emprestimo": self.data_de_emprestimo,
+#             'data_de_devolucao': self.data_de_devolucao,
+#             "livro_emprestado_id": self.livro_emprestado_id,
+#             "usuario_emprestado_id": self.usuario_emprestado_id,
+#         }
+#         return dados_emprestimo
 
 class Emprestimos(Base):
     __tablename__ = 'EMPRESTIMOS'
@@ -118,19 +156,21 @@ class Emprestimos(Base):
     livro_emprestado = relationship(Livro)
     usuario_emprestado_id = Column(Integer, ForeignKey('USUARIOS.id'))
     usuario_emprestado = relationship(Usuarios)
+    status = Column(String, nullable=False)
 
 
     def __repr__(self):
         return ('<Emprestimo: data_de_emprestimo: {} data_de_devolucao: {}'
-                ' livro_emprestado_id: {} usuario_emprestado_id:'.
-                format(self.data_de_emprestimo, self.data_de_devolucao, self.livro_emprestado_id, self.usuario_emprestado_id,))
+                ' livro_emprestado_id: {} usuario_emprestado_id: status: {}'.
+                format(self.data_de_emprestimo, self.data_de_devolucao,
+                       self.livro_emprestado_id, self.usuario_emprestado_id, self.status))
 
     def save(self, db_session):
         try:
             db_session.add(self)
             db_session.commit()
         except SQLAlchemyError:
-            db_session.rollback()  # VOLTAR PARA A INFORMAÇÃO PARA O ÚLTIMO MOMENTO QUE ESTAVA SALVA
+            db_session.rollback()  # VOLTAR PARA A INFORMAÃ‡ÃƒO PARA O ÃšLTIMO MOMENTO QUE ESTAVA SALVA
             raise
 
     def delete_emprestimo(self, db_session):
@@ -144,10 +184,9 @@ class Emprestimos(Base):
             'data_de_devolucao': self.data_de_devolucao,
             "livro_emprestado_id": self.livro_emprestado_id,
             "usuario_emprestado_id": self.usuario_emprestado_id,
+            "status": self.status,
         }
         return dados_emprestimo
-
-
 
 def init_db():
     Base.metadata.create_all(bind=engine)
