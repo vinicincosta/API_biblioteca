@@ -585,7 +585,7 @@ def criar_emprestimo():
             data_de_devolucao=data_de_devolucao,
             livro_emprestado_id=livro_emprestado_id,
             usuario_emprestado_id=usuario_emprestado_id,
-            status="Ativo"
+            status=status
         )
 
         novo_emprestimo.save(db_session)
@@ -780,25 +780,9 @@ def editar_emprestimo(id_emprestimo):
         if not emprestimo_resultado:
             return jsonify({
                 "error": "Emprestimo não encontrado"
-            })
+            }),400
 
-        if not "data_de_emprestimo" in dados_editar_emprestimo or not "data_de_devolucao" in dados_editar_emprestimo or not "livro_emprestado_id" in dados_editar_emprestimo or not "usuario_emprestado_id" in dados_editar_emprestimo:
-            return jsonify({
-                'error': 'Campo inexistente'
-            })
-
-        if (dados_editar_emprestimo["data_de_emprestimo"] == "" or dados_editar_emprestimo["data_de_devolucao"] == "" or
-                dados_editar_emprestimo["livro_emprestado_id"] == "" or dados_editar_emprestimo[
-                    "usuario_emprestado_id"] == ""):
-            return jsonify({
-                "error": "Preencher todos os campos"
-            })
-
-        # //////////////////////////////////////////////
-        emprestimo_resultado.data_de_emprestimo = dados_editar_emprestimo['data_de_emprestimo']
-        emprestimo_resultado.data_de_devolucao = dados_editar_emprestimo['data_de_devolucao']
-        emprestimo_resultado.livro_emprestado_id = dados_editar_emprestimo['livro_emprestado_id']
-        emprestimo_resultado.usuario_emprestado_id = dados_editar_emprestimo['usuario_emprestado_id']
+        emprestimo_resultado.status = dados_editar_emprestimo['status']
         # Verificar se o usuário existe
         usuario = db_session.execute(
             select(Usuarios).where(Usuarios.id == emprestimo_resultado.usuario_emprestado_id)
@@ -816,27 +800,26 @@ def editar_emprestimo(id_emprestimo):
             return jsonify({'error': 'Este livro não existe'})
         else:
             # atualiza os dados
-            emprestimo_resultado.data_de_emprestimo = dados_editar_emprestimo['data_de_emprestimo']
-            emprestimo_resultado.data_de_devolucao = dados_editar_emprestimo['data_de_devolucao']
-            emprestimo_resultado.livro_emprestado_id = dados_editar_emprestimo['livro_emprestado_id']
-            emprestimo_resultado.usuario_emprestado_id = dados_editar_emprestimo['usuario_emprestado_id']
+            # emprestimo_resultado.data_de_emprestimo = dados_editar_emprestimo['data_de_emprestimo']
+            # emprestimo_resultado.data_de_devolucao = dados_editar_emprestimo['data_de_devolucao']
+            # emprestimo_resultado.livro_emprestado_id = dados_editar_emprestimo['livro_emprestado_id']
+            # emprestimo_resultado.usuario_emprestado_id = dados_editar_emprestimo['usuario_emprestado_id']
+            emprestimo_resultado.status = dados_editar_emprestimo['status']
             # salva os dados alterados
             emprestimo_resultado.save(db_session)
 
-            resultado = [{
-                "data_de_emprestimo": emprestimo_resultado.data_de_emprestimo,
-                "data_de_devolucao": emprestimo_resultado.data_de_devolucao,
-                "livro_emprestado_id": emprestimo_resultado.livro_emprestado_id,
-                "usuario_emprestado_id": emprestimo_resultado.usuario_emprestado_id,
-            },
-                {"success": "Empréstimo editado com sucesso!"}]
+            resultado = {
+                "status": emprestimo_resultado.status,
+                "success": "Empréstimo editado com sucesso!"
+            }, 200
+
             # dentro do url sempre chamar função
             return jsonify(resultado)
 
     except ValueError:
         return jsonify({
             'error': 'Valor inserido invalido'
-        })
+        }), 400
 
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -1011,6 +994,8 @@ def calcular_devolucao(data_de_emprestimo,prazo):
         return jsonify({
             "error": e
         }),400
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)
