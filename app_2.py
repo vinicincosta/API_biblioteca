@@ -1,3 +1,4 @@
+
 from sys import exception
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from sqlalchemy import select
@@ -5,58 +6,83 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime
 from models import *
 from dateutil.relativedelta import relativedelta
+from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
+from functools import wraps
 
 app = Flask (__name__)
-
+app.config['JWT_SECRET_KEY'] = "03050710"
+jwt = JWTManager(app)
 
 
 def admin_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         current_user = get_jwt_identity()
-        session = session_local
-
+        db_session = session_local()
         try:
-            busca_id = select(Usuario).where(Usuario.id == current_user)
-            usuario = session.execute(busca_id).scalar()
-
-            if usuario and usuario.papel == "admin":
+            sql = select(Usuarios). where(Usuarios.cpf == current_user)
+            user = db_session.execute(sql).scalar()
+            if user and user.papel == 'admin':
                 return fn(*args, **kwargs)
-            return jsonify({
-                'erro':'Acesso negado. Requer privilégios de administrador'
-            }), 403
+            return jsonify({'msg': 'Acesso negado: Requer privilégio de administrador'}), 403
         finally:
-            session.close()
+            db_session.close()
     return wrapper
 
-@app.route("/login", methods=["POST"])
+
+@app.route('/login', methods=['POST'])
 def login():
     dados = request.get_json()
-    cpf = dados["email"]
-    senha = dados["senha"]
+    cpf = dados['cpf']
+    senha = dados['senha']
 
-    session = session_local
+    db_session = session_local()
 
     try:
-        busca_usuario = select(Usuario).where(Usuario.cpf == cpf)
-        usuario = session.execute(busca_usuario).scalar()
+        sql = select(Usuarios).where(Usuarios.cpf == cpf)
+        user = db_session.execute(sql).scalar()
 
-        if usuario and usuario.check_password_hash(senha):
-            access_token = create_access_token(identity=usuario.cpf)
-            return jsonify(access_token=access_token)
-
-        return jsonify({
-            "erro": "Credenciais inválidas, tente novamente."
-        }), 401
-
-    except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        })
-
+        if user and user.check_password_hash(senha):
+            access_token = create_access_token(identity=cpf) # salt (algo único)
+            return jsonify( access_token = access_token)
+        return jsonify({ 'msg': 'Credenciais inválidas'}),401
     finally:
-        session.close()
+        db_session.close()
 
+@app.route('/cadastro', methods=['POST'])
+def cadastro():
+    dados = request.get_json()
+    nome = dados['nome']
+    cpf = dados['cpf']
+    papel = dados.get('papel', 'usuario')
+    senha = dados['senha']
+    endereco = dados['endereco']
+
+
+    if not nome or not cpf or not senha or not endereco:
+        return jsonify({"msg": "Nome de usuário e senha são obrigatórios"}), 400
+
+    db_session = session_local()
+    try:
+        # Verificar se o usuário já existe
+        user_check = select(Usuarios).where(Usuarios.cpf == cpf)
+        usuario_existente = db_session.execute(user_check).scalar()
+
+        if usuario_existente:
+            return jsonify({"msg": "Usuário já existe"}), 400
+
+        novo_usuario = Usuarios(nome=nome, cpf=cpf, papel=papel, endereco=endereco)
+        novo_usuario.set_senha_hash(senha)
+        db_session.add(novo_usuario)
+        db_session.commit()
+
+        user_id = novo_usuario.id
+        return jsonify({"msg": "Usuário criado com sucesso", "user_id": user_id}), 201
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({"msg": f"Erro ao registrar usuário: {str(e)}"}), 500
+    finally:
+        db_session.close()
 
 @app.route('/')
 def pagina_inicial():
@@ -64,8 +90,9 @@ def pagina_inicial():
 
 
 @app.route('/livro', methods=['GET'])
+# @jwt_required()
 def livro():
-    # @jwt_required()
+
     # @admin_required
     """
                Listar todos os livros
@@ -99,9 +126,10 @@ def livro():
 
 
 @app.route('/livros_disponiveis', methods=['GET'])
-def livros_disponiveis():
-    # @jwt_required()
+# @jwt_required()
     # @admin_required
+def livros_disponiveis():
+
 
     """
                 Listar os livros disponiveis
@@ -232,9 +260,12 @@ def historico_emprestimos(id_usuario):
 
 # Rota Bloqueada
 @app.route('/usuario', methods=['GET'])
+# @jwt_required()
+# @admin_required
+
 def usuario():
-    # @jwt_required()
-    # @admin_required
+
+
     """
         Listar todos os usuario
         :return:Listar todos os usuario
@@ -521,6 +552,8 @@ def criar_usuario():
 #         db_session.close()
 
 
+
+
 @app.route('/novo_emprestimo', methods=['POST'])
 def criar_emprestimo():
     """
@@ -538,26 +571,19 @@ def criar_emprestimo():
 
         # Conversão de dados
         data_de_emprestimo = datetime.strptime(dados_emprestimo['data_de_emprestimo'], '%d-%m-%Y')
-        data_de_devolucao = dados_emprestimo['data_de_devolucao']
+        data_de_devolucao = datetime.strptime(dados_emprestimo['data_de_devolucao'], '%d-%m-%Y')
         livro_emprestado_id = int(dados_emprestimo['livro_emprestado_id'])
         usuario_emprestado_id = int(dados_emprestimo['usuario_emprestado_id'])
 
         # Verificar se o livro está emprestado no momento
-        # emprestimo_existente = db_session.execute(
-        #     select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
-        # ).scalar()
-        #
-        # if emprestimo_existente:
-        #     data_dev = datetime.strptime(emprestimo_existente.data_de_devolucao, '%Y-%m-%d')
-        #     if data_dev > datetime.now():
-        #         return jsonify({"error": f"Livro já emprestado! Disponível em: {data_dev.strftime('%Y-%m-%d')}"}), 400
-
         livro_ja_emprestado = db_session.execute(
             select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
         ).scalar()
 
         if livro_ja_emprestado:
-            return jsonify({"error": "Livro já cadastrado!"}), 400
+            # Verifica se o status do livro é "devolvido"
+            if livro_ja_emprestado.status != "Devolvido":
+                return jsonify({"error": "Livro já está emprestado!"}), 400
 
         # Verificar se o usuário existe
         usuario = db_session.execute(
@@ -576,13 +602,17 @@ def criar_emprestimo():
             return jsonify({'error': 'Livro não encontrado'}), 400
 
         # Determinar o status
-
         status = 'Ativo'
+        data_atual = datetime.now()
+
+        # Verifica se a data de devolução é maior que a data atual
+        # if data_de_devolucao < data_atual:
+        #     status = 'Atrasado'
 
         # Criar o empréstimo
         novo_emprestimo = Emprestimos(
             data_de_emprestimo=data_de_emprestimo.strftime('%d-%m-%Y'),
-            data_de_devolucao=data_de_devolucao,
+            data_de_devolucao=data_de_devolucao.strftime('%d-%m-%Y'),
             livro_emprestado_id=livro_emprestado_id,
             usuario_emprestado_id=usuario_emprestado_id,
             status=status
@@ -602,7 +632,6 @@ def criar_emprestimo():
         return jsonify({"error": str(e)}), 400
     finally:
         db_session.close()
-
 
 # Rota Bloqueada
 @app.route('/editar_livro/<id_livro>', methods=['PUT'])
@@ -978,13 +1007,13 @@ def deletar_livro(id_livro):
 
 
 @app.route('/calcular_devolucao/<data_de_emprestimo>+<prazo>', methods=['GET'])
-def calcular_devolucao(data_de_emprestimo,prazo):
+def calcular_devolucao(data_de_emprestimo, prazo):
     try:
+        # Converte a data de empréstimo para um objeto datetime
+        data_emprestimo = datetime.strptime(data_de_emprestimo, '%d-%m-%Y')
 
-        data_calculada = datetime.today() + relativedelta(days=int(prazo))
-
-        # print(data_calculada)
-        # print(data_calculada.strftime('%d/%m/%Y'))
+        # Calcula a data de devolução com base na data de empréstimo
+        data_calculada = data_emprestimo + relativedelta(days=int(prazo))
 
         return jsonify({
             "devolucao": data_calculada.strftime('%d-%m-%Y'),
@@ -992,8 +1021,9 @@ def calcular_devolucao(data_de_emprestimo,prazo):
 
     except Exception as e:
         return jsonify({
-            "error": e
-        }),400
+            "error": str(e)
+        }), 400
+
 
 
 
