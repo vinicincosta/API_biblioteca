@@ -85,15 +85,16 @@ class Usuarios(Base):
 class Livro(Base):
     __tablename__ = 'LIVROS'
     id = Column(Integer, primary_key=True)
-
     titulo = Column(String, nullable=False)
     autor = Column(String, nullable=False)
     ISBN = Column(Integer, nullable=False)
     resumo = Column(String, nullable=False)
 
+    leitura = Column(String, nullable=False)
+
     def __repr__(self):
-        return ('<Livro: titulo: {} autor: {} ISBN: {} resumo: {}'.
-                format(self.titulo, self.autor, self.ISBN, self.resumo))
+        return ('<Livro: titulo: {} autor: {} ISBN: {} resumo: {} leitura: {}'.
+                format(self.titulo, self.autor, self.ISBN, self.resumo, self.leitura))
 
 
     def save(self, db_session):
@@ -116,6 +117,7 @@ class Livro(Base):
             "autor": self.autor,
             "ISBN": self.ISBN,
             "resumo": self.resumo,
+            "leitura": self.leitura
         }
         return dados_livro
 

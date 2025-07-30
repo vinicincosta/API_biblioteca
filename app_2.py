@@ -29,25 +29,39 @@ def admin_required(fn):
             db_session.close()
     return wrapper
 
-
 @app.route('/login', methods=['POST'])
 def login():
     dados = request.get_json()
-    cpf = dados['cpf']
-    senha = dados['senha']
+    cpf = dados.get('cpf')
+    senha = dados.get('senha')
 
     db_session = session_local()
 
     try:
+        # Verifica se CPF e senha foram fornecidos
+        if not cpf or not senha:
+            return jsonify({'msg': 'CPF e senha são obrigatórios'}), 400
+
+        # Consulta o usuário pelo CPF
         sql = select(Usuarios).where(Usuarios.cpf == cpf)
         user = db_session.execute(sql).scalar()
 
+        # Verifica se o usuário existe e se a senha está correta
         if user and user.check_password_hash(senha):
-            access_token = create_access_token(identity=cpf) # salt (algo único)
-            return jsonify( access_token = access_token)
-        return jsonify({ 'msg': 'Credenciais inválidas'}),401
+            access_token = create_access_token(identity=cpf)  # Gera o token de acesso
+            papel = user.papel  # Obtém o papel do usuário
+            nome = user.nome  # Obtém o nome do usuário
+            print(f"Login bem-sucedido: {nome}, Papel: {papel}")  # Diagnóstico
+            return jsonify(access_token=access_token, papel=papel, nome=nome)  # Retorna o nome também
+
+        print("Credenciais inválidas.")  # Diagnóstico
+        return jsonify({'msg': 'Credenciais inválidas'}), 401
+
     finally:
         db_session.close()
+
+
+
 
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
@@ -58,9 +72,12 @@ def cadastro():
     senha = dados['senha']
     endereco = dados['endereco']
 
-
     if not nome or not cpf or not senha or not endereco:
-        return jsonify({"msg": "Nome de usuário e senha são obrigatórios"}), 400
+        return jsonify({"msg": "Nome de usuário, CPF, senha e endereço são obrigatórios"}), 400
+
+    # Verificação do CPF
+    if len(cpf) != 11 or not cpf.isdigit():
+        return jsonify({"msg": "O CPF deve conter exatamente 11 dígitos."}), 400
 
     db_session = session_local()
     try:
@@ -105,6 +122,8 @@ def livro():
                }
 
                #Erros possíveis:
+
+
                Se inserir letras retornará uma mensagem de invalidez
                """
     db_session = session_local()
@@ -355,13 +374,13 @@ def criar_livro():
         # quando clicar no botao de salva
         dados_livro = request.get_json()
 
-        if not 'titulo' in dados_livro or not 'autor' in dados_livro or not 'ISBN' in dados_livro or not 'ISBN' in dados_livro:
+        if not 'titulo' in dados_livro or not 'autor' in dados_livro or not 'ISBN' in dados_livro or not 'ISBN' in dados_livro or not 'leitura' in dados_livro:
             return jsonify({
                 'error': 'Campo inexistente'
             })
 
         if dados_livro['titulo'] == "" or dados_livro['autor'] == "" or dados_livro['ISBN'] == "" or dados_livro[
-            'resumo'] == "":
+            'resumo'] == "" or dados_livro['leitura'] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
             })
@@ -371,10 +390,12 @@ def criar_livro():
             autor = dados_livro['autor']
             ISBN = dados_livro['ISBN']
             resumo = dados_livro['resumo']
+            leitura = dados_livro['leitura']
             form_novo_livro = Livro(titulo=titulo,
                                     autor=autor,
                                     ISBN=int(ISBN),
-                                    resumo=resumo
+                                    resumo=resumo,
+                                    leitura=leitura
                                     )
             print(form_novo_livro)
             form_novo_livro.save(db_session)
@@ -385,6 +406,7 @@ def criar_livro():
                 "autor": autor,
                 "ISBN": ISBN,
                 "resumo": resumo,
+                "leitura": leitura,
                 "success": "Livro cadastrado com sucesso!"
             }
             # dentro do url sempre chamar função
@@ -463,95 +485,6 @@ def criar_usuario():
         return jsonify({"error": str(e)})
     finally:
         db_session.close()
-
-# Rota Bloqueada
-# @app.route('/novo_emprestimo', methods=['POST'])
-# def criar_emprestimo():
-#     # @jwt_required()
-#     # @admin_required
-#     """
-#             Cadastrar um novo empréstimo
-#             :return: Cadastrar novo empréstimo
-#
-#             ## Resposta (JSON)
-#                 json
-#             {
-#               resultado = [{
-#                 "data_de_emprestimo": data_de_emprestimo,
-#                 "data_de_devolucao": data_de_devolucao,
-#                 "livro_emprestado_id": livro_emprestado_id,
-#                 "usuario_emprestado_id": usuario_emprestado_id,
-#               }]
-#       """
-#     db_session = session_local()
-#     try:
-#         dados_emprestimo = request.get_json()
-#
-#         if (not "data_de_emprestimo" in dados_emprestimo or not "data_de_devolucao" in dados_emprestimo
-#                 or not "livro_emprestado_id" in dados_emprestimo or not "usuario_emprestado_id" in dados_emprestimo):
-#             return jsonify({'error': 'Campo inexistente'}), 400
-#
-#         if (dados_emprestimo["data_de_emprestimo"] == "" or dados_emprestimo["data_de_devolucao"] == "" or
-#                 dados_emprestimo["livro_emprestado_id"] == "" or dados_emprestimo["usuario_emprestado_id"] == ""):
-#             return jsonify({"error": "Preencher todos os campos"}), 400
-#
-#         data_de_emprestimo = dados_emprestimo['data_de_emprestimo']
-#         data_de_devolucao = dados_emprestimo['data_de_devolucao']
-#         livro_emprestado_id = int(dados_emprestimo['livro_emprestado_id'])
-#         usuario_emprestado_id = int(dados_emprestimo['usuario_emprestado_id'])
-#
-#         # Verificar se o livro já está emprestado
-#         livro_ja_emprestado = db_session.execute(
-#             select(Emprestimos).where(Emprestimos.livro_emprestado_id == livro_emprestado_id)
-#         ).scalar()
-#
-#         if livro_ja_emprestado:
-#             return jsonify({"error": "Livro já cadastrado!"}), 400
-#
-#         # Verificar se o usuário existe
-#         usuario = db_session.execute(
-#             select(Usuarios).where(Usuarios.id == usuario_emprestado_id)
-#         ).scalar()
-#
-#         if not usuario:
-#             return jsonify({"error": "Usuário não encontrado!"}), 400
-#
-#         # Verificar se o livro existe
-#         livro = db_session.execute(
-#             select(Livro).where(Livro.id == livro_emprestado_id)
-#         ).scalar()
-#
-#         if not livro:
-#             return jsonify({'error': 'Este livro não existe'}), 400
-#
-#
-#
-#         # Criar o empréstimo
-#         novo_emprestimo = Emprestimos(
-#             data_de_emprestimo= data_de_emprestimo,
-#             data_de_devolucao= data_de_devolucao,
-#             livro_emprestado_id= livro_emprestado_id,
-#             usuario_emprestado_id= usuario_emprestado_id
-#         )
-#
-#         novo_emprestimo.save(db_session)
-#
-#         resultado = {
-#                 "data_de_emprestimo": data_de_emprestimo,
-#                 "data_de_devolucao": data_de_devolucao,
-#                 "livro_emprestado_id": livro_emprestado_id,
-#                 "usuario_emprestado_id": usuario_emprestado_id,
-#                 "success": "Empréstimo cadastrado com sucesso!"
-#             }
-#
-#         return jsonify(resultado), 201
-#
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 400
-#     finally:
-#         db_session.close()
-
-
 
 
 @app.route('/novo_emprestimo', methods=['POST'])
@@ -666,14 +599,12 @@ def editar_livro(id_livro):
                 "error": "Livro não encontrado"
             }), 400
 
-        if not 'titulo' in dados_editar_livro or not 'autor' in dados_editar_livro or not 'ISBN' in dados_editar_livro or not 'ISBN' in dados_editar_livro:
+        if not 'titulo' in dados_editar_livro or not 'autor' in dados_editar_livro or not 'ISBN' in dados_editar_livro or not 'ISBN' in dados_editar_livro or not 'leitura' in dados_editar_livro:
             return jsonify({
                 'error': 'Campo inexistente'
             }), 400
 
-        if dados_editar_livro['titulo'] == "" or dados_editar_livro['autor'] == "" or dados_editar_livro[
-            'ISBN'] == "" or dados_editar_livro[
-            'resumo'] == "":
+        if dados_editar_livro['titulo'] == "" or dados_editar_livro['autor'] == "" or dados_editar_livro['ISBN'] == "" or dados_editar_livro['resumo'] == "" or dados_editar_livro['leitura'] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
             }), 400
@@ -684,6 +615,7 @@ def editar_livro(id_livro):
             livro_resultado.autor = dados_editar_livro['autor']
             livro_resultado.isbn = dados_editar_livro['ISBN']
             livro_resultado.resumo = dados_editar_livro['resumo']
+            livro_resultado.leitura = dados_editar_livro['leitura']
             # salva os dados alterados
             livro_resultado.save(db_session)
 
@@ -693,6 +625,7 @@ def editar_livro(id_livro):
                 "autor": livro_resultado.autor,
                 "ISBN": livro_resultado.isbn,
                 "resumo": livro_resultado.resumo,
+                "leitura": livro_resultado.leitura,
                 "success": "Livro editado com sucesso!"
             }
 
@@ -888,7 +821,7 @@ def get_usuario(id_usuario):
         return jsonify({
             "success": "Usuario encontrado com sucesso",
             'id': usuario.id,
-            'nome': usuario.nome,
+            "nome": usuario.nome,
             'cpf': usuario.cpf,
             'endereco': usuario.endereco,
         }), 200
