@@ -61,8 +61,6 @@ def login():
         db_session.close()
 
 
-
-
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
     dados = request.get_json()
@@ -71,8 +69,10 @@ def cadastro():
     papel = dados.get('papel', 'usuario')
     senha = dados['senha']
     endereco = dados['endereco']
+    status_user = dados['status_user']
 
-    if not nome or not cpf or not senha or not endereco:
+
+    if not nome or not cpf or not senha or not endereco or not status_user:
         return jsonify({"msg": "Nome de usuário, CPF, senha e endereço são obrigatórios"}), 400
 
     # Verificação do CPF
@@ -88,7 +88,7 @@ def cadastro():
         if usuario_existente:
             return jsonify({"msg": "Usuário já existe"}), 400
 
-        novo_usuario = Usuarios(nome=nome, cpf=cpf, papel=papel, endereco=endereco)
+        novo_usuario = Usuarios(nome=nome, cpf=cpf, papel=papel, endereco=endereco, status_user=status_user)
         novo_usuario.set_senha_hash(senha)
         db_session.add(novo_usuario)
         db_session.commit()
@@ -258,7 +258,7 @@ def historico_emprestimos(id_usuario):
             return jsonify({
                 "error": "Este usuario não realizou empréstimos"
             })
-        #
+
         # if emprestimo_usuario == id_usuario:
         #     return jsonify({'ERROR': 'Este usuario Ja existe'})
 
@@ -281,7 +281,6 @@ def historico_emprestimos(id_usuario):
 @app.route('/usuario', methods=['GET'])
 # @jwt_required()
 # @admin_required
-
 def usuario():
 
 
@@ -444,12 +443,13 @@ def criar_usuario():
         # print(dados_usuario)
         # print(dados_usuario["cpf"])
         # quando clicar no botao de salva
-        if not "cpf" in dados_usuario or not "nome" in dados_usuario or not "endereco" in dados_usuario:
+        if (not "cpf" in dados_usuario or not "nome" in dados_usuario or not "endereco" in dados_usuario or not
+        "status_user" in dados_usuario ):
             return jsonify({
                 'error': 'Campo inexistente'
             })
 
-        if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "":
+        if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "" or dados_usuario["status_user"] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
             })
@@ -459,10 +459,12 @@ def criar_usuario():
             nome = dados_usuario['nome']
             cpf = dados_usuario['cpf']
             endereco = dados_usuario['endereco']
+            status_user = dados_usuario['status_user']
 
             form_novo_usuario = Usuarios(nome=nome,
                                          cpf=cpf,
                                          endereco=endereco,
+                                         status_user=status_user
                                          )
 
             print(form_novo_usuario)
@@ -477,6 +479,7 @@ def criar_usuario():
                 "nome": nome,
                 "cpf": cpf,
                 "endereco": endereco,
+                "status_user": status_user,
                 "success": "Usuario cadastrado com sucesso!"
             }
             # dentro do url sempre chamar função
@@ -674,7 +677,8 @@ def editar_usuario(id_usuario):
             }),400
 
         # verificação dos dados
-        if not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario:
+        if (not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario
+                or not "status_user" in dados_editar_usuario):
             return jsonify({
                 'error': 'Campo inexistente'
             }),400
@@ -690,6 +694,7 @@ def editar_usuario(id_usuario):
             usuario_resultado.nome = dados_editar_usuario['nome']
             usuario_resultado.cpf = dados_editar_usuario['cpf']
             usuario_resultado.endereco = dados_editar_usuario['endereco']
+            usuario_resultado.status_user = dados_editar_usuario['status_user']
             usuario_resultado.save(db_session)
             # salva os dados alterados
             resultado = {
@@ -697,6 +702,7 @@ def editar_usuario(id_usuario):
                 "nome": usuario_resultado.nome,
                 "cpf": usuario_resultado.cpf,
                 "endereco": usuario_resultado.endereco,
+                "status_user":usuario_resultado.status_user,
                 "success": "Usuario editado com sucesso!"
             }
 
@@ -879,23 +885,6 @@ def get_livro(id_livro):
     finally:
         db_session.close()
 
-
-# @app.route('/get_emprestimo/<id_emprestimo>', methods=['GET'])
-# def get_emprestimo(id_emprestimo):
-#     emprestimos = db_session.execute(select(Emprestimos).filter_by(id=int(id_emprestimo))).scalar()
-#
-#     if not emprestimos:
-#         return jsonify({'error': 'Empréstimo não encontrado'})
-#
-#     return jsonify({
-#         "sucess": "Emprestimo buscado com sucesso",
-#         'id': Emprestimos.id,
-#         'data de emprestimo': Emprestimos.data_de_emprestimo,
-#         'data de devolução': Emprestimos.data_de_devolucao,
-#         'Livros emprestados': Emprestimos.livro_emprestado_id,
-#         'Usuário emprestimo': Emprestimos.usuario_emprestado_id,
-#     })
-
 @app.route('/deletar_usuario/<id_usuario>', methods=['DELETE'])
 def deletar_usuario(id_usuario):
     """
@@ -959,7 +948,6 @@ def calcular_devolucao(data_de_emprestimo, prazo):
 
 
 
-
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)
 
@@ -996,62 +984,3 @@ if __name__ == '__main__':
 #     endereco VARCHAR not null
 # );
 
-
-
-
-
-
-
-@app.route("/validade/<data_str>/<valor>/<unidade>", methods=["GET"])
-def calcular_validade(data_str, valor, unidade, ):
-    """
-    Calcula a data de validade de um produto com base na data de fabricação e no tempo informado.
-
-    :param data_str: Ano da data de fabricação./ Mês da data de fabricação./Dia da data de fabricação.
-    :param valor: Quantidade de tempo a adicionar.
-    :param unidade: Unidade de tempo (dias, semanas, meses, anos).
-
-    :return: JSON contendo a data de cadastro, validade em diferentes unidades e data de vencimento.
-    """
-    try:
-        data_entrada = datetime.strptime(data_str, '%d-%m-%Y')
-
-        # Criar a data de fabricação
-        data_fabricacao = datetime(data_entrada.year, data_entrada.month, data_entrada.day)
-
-        # Definir os incrementos com base na unidade fornecida
-        unidades_validas = {
-            "dias": relativedelta(days=int(valor)),
-            "semanas": relativedelta(weeks=int(valor)),
-            "meses": relativedelta(months=int(valor)),
-            "anos": relativedelta(years=int(valor)),
-        }
-
-        # data atual
-        data_atual = datetime.now()
-
-        # Calcular a data de validade
-        data_validade = data_fabricacao + unidades_validas[unidade]
-
-        # Calcular validade em todas as unidades
-        diferenca_dias = (data_validade - data_fabricacao).days
-        diferenca_semanas = diferenca_dias // 7
-        diferenca_meses = diferenca_dias // 30
-        diferenca_anos = diferenca_dias // 365
-
-        # Retornar resposta JSON
-        return jsonify({
-            'data_atual': data_atual.strftime("%d/%m/%Y | %H:%M:%S"),
-            "data_validade": data_validade.strftime("%d/%m/%Y"),
-            'data de cadastro': data_fabricacao.strftime("%d/%m/%Y | %H:%M:%S"),
-            "validade": {
-                "dias": diferenca_dias,
-                "semanas": diferenca_semanas,
-                "meses": diferenca_meses,
-                "anos": diferenca_anos
-            },
-
-        })
-
-    except ValueError:
-        return jsonify({"erro": "Os parâmetros inseridos são inválidos!"}), 400

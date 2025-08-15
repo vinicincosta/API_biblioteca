@@ -47,6 +47,7 @@ class Usuarios(Base):
     endereco = Column(String, nullable=False)
     senha_hash = Column(String, nullable=False)
     papel = Column(String, nullable=False)
+    status_user = Column(String, nullable=False)
 
     def __repr__(self):
         return ('<Usuario: nome: {} cpf: {} endereco: {}'.
@@ -77,7 +78,8 @@ class Usuarios(Base):
             "nome": self.nome,
             "cpf": self.cpf,
             "endereco": self.endereco,
-            'papel': self.papel
+            'papel': self.papel,
+            'status_user': self.status_user
         }
         return dados_usuario
 
