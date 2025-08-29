@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from functools import wraps
 
+
 app = Flask (__name__)
 app.config['JWT_SECRET_KEY'] = "03050710"
 jwt = JWTManager(app)
@@ -105,7 +106,6 @@ def cadastro():
 def pagina_inicial():
     return 'Pagina inicial (API BIBLIOTECA)'
 
-
 @app.route('/livro', methods=['GET'])
 # @jwt_required()
 def livro():
@@ -142,7 +142,6 @@ def livro():
         return jsonify({"error": str(e)})
     finally:
         db_session.close()
-
 
 @app.route('/livros_disponiveis', methods=['GET'])
 # @jwt_required()
@@ -371,6 +370,8 @@ def criar_livro():
     db_session = session_local()
     try:
         # quando clicar no botao de salva
+
+
         dados_livro = request.get_json()
 
         if not 'titulo' in dados_livro or not 'autor' in dados_livro or not 'ISBN' in dados_livro or not 'ISBN' in dados_livro or not 'leitura' in dados_livro:
@@ -631,6 +632,7 @@ def editar_livro(id_livro):
                 "leitura": livro_resultado.leitura,
                 "success": "Livro editado com sucesso!"
             }
+
 
             # dentro do url sempre chamar função
             return jsonify(resultado), 200

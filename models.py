@@ -79,7 +79,8 @@ class Usuarios(Base):
             "cpf": self.cpf,
             "endereco": self.endereco,
             'papel': self.papel,
-            'status_user': self.status_user
+            'status_user': self.status_user,
+            'senha_hash':self.senha_hash
         }
         return dados_usuario
 
