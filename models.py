@@ -41,8 +41,9 @@ Base = declarative_base()
 
 class Usuarios(Base):
     __tablename__ = 'USUARIOS'
-    id = Column(Integer, primary_key=True)
+    id_usuario = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False)
+    email = Column(String, nullable=True, unique=True)
     cpf = Column(String, nullable=False)
     endereco = Column(String, nullable=False)
     senha_hash = Column(String, nullable=False)
@@ -74,9 +75,10 @@ class Usuarios(Base):
 
     def serialize_usuario(self):
         dados_usuario = {
-            "id_usuario": self.id,
+            "id_usuario": self.id_usuario,
             "nome": self.nome,
             "cpf": self.cpf,
+            "email": self.email,
             "endereco": self.endereco,
             'papel': self.papel,
             'status_user': self.status_user,
@@ -87,7 +89,7 @@ class Usuarios(Base):
 
 class Livro(Base):
     __tablename__ = 'LIVROS'
-    id = Column(Integer, primary_key=True)
+    id_livro = Column(Integer, primary_key=True)
     titulo = Column(String, nullable=False)
     autor = Column(String, nullable=False)
     ISBN = Column(Integer, nullable=False)
@@ -115,7 +117,7 @@ class Livro(Base):
 
     def serialize_livro(self):
         dados_livro = {
-            "id_livro": self.id,
+            "id_livro": self.id_livro,
             "titulo": self.titulo,
             "autor": self.autor,
             "ISBN": self.ISBN,
@@ -135,9 +137,9 @@ class Emprestimos(Base):
     id = Column(Integer, primary_key=True)
     data_de_emprestimo = Column(String, nullable=False)
     data_de_devolucao = Column(String, nullable=False)
-    livro_emprestado_id = Column(Integer, ForeignKey('LIVROS.id'))
+    livro_emprestado_id = Column(Integer, ForeignKey('LIVROS.id_livro'))
     livro_emprestado = relationship(Livro)
-    usuario_emprestado_id = Column(Integer, ForeignKey('USUARIOS.id'))
+    usuario_emprestado_id = Column(Integer, ForeignKey('USUARIOS.id_usuario'))
     usuario_emprestado = relationship(Usuarios)
     status = Column(String, nullable=False)
 
