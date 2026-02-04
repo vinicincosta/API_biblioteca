@@ -1004,8 +1004,6 @@ def calcular_devolucao(data_de_emprestimo):
 
 
 
-
-
 if __name__ == "__main__":
     app.run(
         debug=True,
@@ -1046,4 +1044,6 @@ if __name__ == "__main__":
 #     cpf      VARCHAR not null,
 #     endereco VARCHAR not null
 # );
+
+
 
