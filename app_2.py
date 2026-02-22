@@ -1,20 +1,16 @@
-import email
-from sys import exception
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-from datetime import datetime
+from sqlalchemy import select, func
 from models import *
 from dateutil.relativedelta import relativedelta
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from functools import wraps
 
-
-app = Flask (__name__)
+app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = "03050710"
 jwt = JWTManager(app)
 
 PRAZO_MAXIMO_DIAS = 20
+
 
 def roles_required(*roles):
     """
@@ -104,12 +100,10 @@ def cadastro():
     senha = dados['senha']
     endereco = dados['endereco']
 
-
     status_user = "Ativo"
 
-    if not nome or not email or not senha or not cpf or not endereco  :
+    if not nome or not email or not senha or not cpf or not endereco:
         return jsonify({"msg": "É necessário preencher todos os campos"}), 400
-
 
     #  Se o papel for admin → valida CPF
     if papel == "admin" or "usuario":
@@ -149,14 +143,15 @@ def cadastro():
     finally:
         db_session.close()
 
+
 @app.route('/')
 def pagina_inicial():
     return 'Pagina inicial (API BIBLIOTECA)'
 
+
 @app.route('/livro', methods=['GET'])
 # @jwt_required()
 def livro():
-
     # @admin_required
     """
                Listar todos os livros
@@ -190,77 +185,66 @@ def livro():
     finally:
         db_session.close()
 
+
+# Correto
 @app.route('/livros_disponiveis', methods=['GET'])
-# @jwt_required()
-    # @admin_required
 def livros_disponiveis():
 
-
-    """
-                Listar os livros disponiveis
-                :return:Listar os livros disponiveis
-
-                ## Resposta (JSON)
-                    json
-                {
-                    'livros_disponiveis': lista_livros
-                }
-
-                #Erros possíveis:
-                Se inserir letras retornará uma mensagem de invalidez
-                """
     db_session = session_local()
     try:
+        # IDs dos livros com empréstimo ATIVO
+        livros_emprestados_ids = db_session.execute(
+            select(Emprestimos.livro_emprestado_id)
+            .where(Emprestimos.status == "Ativo")
+        ).scalars().all()
 
-        livros_emprestadoss = select(Emprestimos.livro_emprestado_id).where(Emprestimos.id == Livro.id_livro)
-        lista_livros_emprestados = db_session.execute(livros_emprestadoss).scalars()
-        todos_livros = db_session.execute(select(Livro)).scalars()
-        print(lista_livros_emprestados)
+        # Todos os livros
+        todos_livros = db_session.execute(
+            select(Livro)
+        ).scalars().all()
+
         lista_livros = []
-        for livr in todos_livros:
-            if livr.id not in lista_livros_emprestados:
-                lista_livros.append(livr.serialize_livro())
+
+        for livro in todos_livros:
+            # Disponível = NÃO está com status ativo
+            if livro.id_livro not in livros_emprestados_ids:
+                lista_livros.append(livro.serialize_livro())
 
         return jsonify({'livros_disponiveis': lista_livros})
+
     except Exception as e:
         return jsonify({"error": str(e)})
+
     finally:
         db_session.close()
 
-# Rota Bloqueada
+# Correto
 @app.route('/livros_emprestados', methods=['GET'])
 def livros_emprestados():
-    # @jwt_required()
-    # @admin_required
-    """
-                Listar os livros emprestados
-                :return:Listar os livros emprestados
 
-                ## Resposta (JSON)
-                    json
-                {
-                   livros_emprestados': lista_livros
-                }
-
-                #Erros possíveis:
-                Se inserir letras retornará uma mensagem de invalidez
-                """
     db_session = session_local()
     try:
-        livros_disponiveis = select(Emprestimos.livro_emprestado_id).where(Emprestimos.id == Livro.id_livro)
-        lista_livros_disponiveis = db_session.execute(livros_disponiveis).scalars()
-        todos_livro = db_session.execute(select(Livro)).scalars()
-        print(lista_livros_disponiveis)
+        # Buscar empréstimos com status ATIVO
+        emprestimos_ativos = db_session.execute(
+            select(Emprestimos)
+            .where(Emprestimos.status == "Ativo")
+        ).scalars().all()
+
         lista_livros = []
-        for livroo in todos_livro:
-            if livroo.id in lista_livros_disponiveis:
-                lista_livros.append(livroo.serialize_livro())
+
+        for emprestimo in emprestimos_ativos:
+            livro = db_session.get(Livro, emprestimo.livro_emprestado_id)
+            if livro:
+                lista_livros.append(livro.serialize_livro())
 
         return jsonify({'livros_emprestados': lista_livros})
+
     except Exception as e:
         return jsonify({"error": str(e)})
+
     finally:
         db_session.close()
+
 
 # Rota Bloqueada
 @app.route('/historico_emprestimos/<int:id_usuario>', methods=['GET'])
@@ -286,7 +270,7 @@ def historico_emprestimos(id_usuario):
         try:
             id_usuari = int(id_usuario)
             emprestimo_usuario = db_session.execute(select(Emprestimos).
-                                                    where(
+            where(
                 Emprestimos.usuario_emprestado_id == id_usuari)).scalars().all()
 
         except ValueError:
@@ -295,7 +279,6 @@ def historico_emprestimos(id_usuario):
             })
 
         if not id_usuari:
-
             return jsonify({
                 "error": "Este usuario não existe"
             })
@@ -323,13 +306,12 @@ def historico_emprestimos(id_usuario):
     finally:
         db_session.close()
 
+
 # Rota Bloqueada
 @app.route('/usuario', methods=['GET'])
 # @jwt_required()
 # @admin_required
 def usuario():
-
-
     """
         Listar todos os usuario
         :return:Listar todos os usuario
@@ -359,46 +341,34 @@ def usuario():
     finally:
         db_session.close()
 
-# Rota Bloqueada
-# @app.route('/emprestimo', methods=['GET'])
-# def emprestimo():
-#     # @jwt_required()
-#     # @admin_required
-#     """
-#            Listar todos os emprestimos
-#            :return:Listar todos os emprestimos
-#
-#            ## Resposta (JSON)
-#                json
-#            {
-#                'lista_emprestimo': lista_emprestimo
-#            }
-#
-#            #Erros possíveis:
-#            Se inserir letras retornará uma mensagem de invalidez
-#            """
-#     db_session = session_local()
-#     try:
-#         sql_emprestimo = select(Emprestimos)
-#         resultado_emprestimo = db_session.execute(sql_emprestimo).scalars()
-#         lista_emprestimo = []
-#         for n in resultado_emprestimo:
-#             lista_emprestimo.append(n.serialize_emprestimo())
-#             print(lista_emprestimo[-1])
-#         return jsonify({
-#             'lista_emprestimo': lista_emprestimo
-#         })
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-#     finally:
-#         db_session.close()
-
 
 @app.route('/emprestimo', methods=['GET'])
 def emprestimo():
+    # @jwt_required()
+    # @admin_required
+    """
+           Listar todos os emprestimos
+           :return:Listar todos os emprestimos
+
+           ## Resposta (JSON)
+               json
+           {
+               'lista_emprestimo': lista_emprestimo
+           }
+
+           #Erros possíveis:
+           Se inserir letras retornará uma mensagem de invalidez
+           """
     db_session = session_local()
     try:
-        # 🔥 Atualiza devoluções vencidas
+        sql_emprestimo = select(Emprestimos)
+        resultado_emprestimo = db_session.execute(sql_emprestimo).scalars()
+        lista_emprestimo = []
+        for n in resultado_emprestimo:
+            lista_emprestimo.append(n.serialize_emprestimo())
+            print(lista_emprestimo[-1])
+
+        #  Atualiza devoluções vencidas
         devolver_emprestimos_vencidos(db_session)
 
         resultado = db_session.execute(select(Emprestimos)).scalars()
@@ -412,6 +382,8 @@ def emprestimo():
         db_session.close()
 
 def devolver_emprestimos_vencidos(db_session):
+
+    # data atual
     hoje = datetime.now().date()
 
     emprestimos = db_session.execute(
@@ -419,12 +391,13 @@ def devolver_emprestimos_vencidos(db_session):
         .where(Emprestimos.status == "Ativo")
     ).scalars().all()
 
+
     for emp in emprestimos:
         data_prevista = datetime.strptime(emp.data_de_devolucao, '%d-%m-%Y').date()
 
         if data_prevista < hoje:
             emp.status = "Devolvido"
-            # ❌ NÃO altera a data_de_devolucao
+            #  NÃO altera a data_de_devolucao
             # (ela já representa o prazo máximo)
 
     db_session.commit()
@@ -447,11 +420,11 @@ def devolver_emprestimo(id_emprestimo):
                 "status_atual": emprestimo.status
             }), 400
 
-        # 🔥 ALTERAÇÃO REAL
+        #  ALTERAÇÃO REAL
         emprestimo.status = "Devolvido"
         emprestimo.data_de_devolucao = datetime.now().strftime('%d-%m-%Y')
 
-        db_session.add(emprestimo)   # 🔴 ESSENCIAL
+        db_session.add(emprestimo)  # ESSENCIAL
         db_session.commit()
 
         return jsonify({
@@ -492,7 +465,6 @@ def criar_livro():
     db_session = session_local()
     try:
         # quando clicar no botao de salva
-
 
         dados_livro = request.get_json()
 
@@ -567,12 +539,13 @@ def criar_usuario():
         # print(dados_usuario["cpf"])
         # quando clicar no botao de salva
         if (not "cpf" in dados_usuario or not "nome" in dados_usuario or not "endereco" in dados_usuario or not
-        "status_user" in dados_usuario ):
+        "status_user" in dados_usuario):
             return jsonify({
                 'error': 'Campo inexistente'
             })
 
-        if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "" or dados_usuario["status_user"] == "":
+        if dados_usuario["cpf"] == "" or dados_usuario["nome"] == "" or dados_usuario["endereco"] == "" or \
+                dados_usuario["status_user"] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
             })
@@ -612,7 +585,7 @@ def criar_usuario():
     finally:
         db_session.close()
 
-
+# Correto
 @app.route('/novo_emprestimo', methods=['POST'])
 def criar_emprestimo():
     db_session = session_local()
@@ -624,7 +597,7 @@ def criar_emprestimo():
             if not dados.get(campo):
                 return jsonify({'error': f'O campo "{campo}" é obrigatório'}), 400
 
-        # 📌 Data do empréstimo é sempre HOJE
+        # Data do empréstimo é sempre HOJE
         data_emprestimo = datetime.now()
         data_devolucao = data_emprestimo + relativedelta(days=PRAZO_MAXIMO_DIAS)
 
@@ -665,9 +638,9 @@ def criar_emprestimo():
         db_session.close()
 
 
-# Rota Bloqueada
 @app.route('/editar_livro/<id_livro>', methods=['PUT'])
 def editar_livro(id_livro):
+    print("aaaaaaaaaaaaaaa")
     # @jwt_required()
     # @admin_required
     """
@@ -690,7 +663,7 @@ def editar_livro(id_livro):
         dados_editar_livro = request.get_json()
 
         # busca de acordo com o id, usando o db_session
-        livro_resultado = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
+        livro_resultado = db_session.execute(select(Livro).filter_by(id_livro=int(id_livro))).scalar()
         print(livro_resultado)
         # verifica se existe
         if not livro_resultado:
@@ -719,6 +692,7 @@ def editar_livro(id_livro):
             livro_resultado.save(db_session)
 
             resultado = {
+
                 "id_livro": livro_resultado.id_livro,
                 "titulo": livro_resultado.titulo,
                 "autor": livro_resultado.autor,
@@ -726,9 +700,7 @@ def editar_livro(id_livro):
                 "resumo": livro_resultado.resumo,
                 "leitura": livro_resultado.leitura,
                 "success": "Livro editado com sucesso!"
-            }
-
-
+                }
             # dentro do url sempre chamar função
             return jsonify(resultado), 200
 
@@ -741,6 +713,7 @@ def editar_livro(id_livro):
         return jsonify({"error": str(e)}), 400
     finally:
         db_session.close()
+
 
 # Rota Bloqueada
 @app.route('/editar_usuario/<id_usuario>', methods=['PUT'])
@@ -765,26 +738,27 @@ def editar_usuario(id_usuario):
     try:
         dados_editar_usuario = request.get_json()
         # busca de acordo com o id, usando o db_session
-        usuario_resultado = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
+        usuario_resultado = db_session.execute(select(Usuarios).filter_by(id_usuario=int(id_usuario))).scalar()
         print(usuario_resultado)
         # verifica se existe
         if not usuario_resultado:
             return jsonify({
                 "error": "Usuário não encontrado"
-            }),400
+            }), 400
 
         # verificação dos dados
-        if (not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario
+        if (
+                not "cpf" in dados_editar_usuario or not "nome" in dados_editar_usuario or not "endereco" in dados_editar_usuario
                 or not "status_user" in dados_editar_usuario or not "email" in dados_editar_usuario):
             return jsonify({
                 'error': 'Campo inexistente'
-            }),400
+            }), 400
 
         if dados_editar_usuario["cpf"] == "" or dados_editar_usuario["nome"] == "" or dados_editar_usuario[
             "endereco"] == "" or dados_editar_usuario["email"] == "":
             return jsonify({
                 "error": "Preencher todos os campos"
-            }),400
+            }), 400
 
         else:
             # atualiza os dados
@@ -792,6 +766,7 @@ def editar_usuario(id_usuario):
             usuario_resultado.cpf = dados_editar_usuario['cpf']
             usuario_resultado.email = dados_editar_usuario['email']
             usuario_resultado.endereco = dados_editar_usuario['endereco']
+            usuario_resultado.papel = dados_editar_usuario['papel']
             usuario_resultado.status_user = dados_editar_usuario['status_user']
             usuario_resultado.save(db_session)
             # salva os dados alterados
@@ -801,7 +776,8 @@ def editar_usuario(id_usuario):
                 "email": usuario_resultado.email,
                 "cpf": usuario_resultado.cpf,
                 "endereco": usuario_resultado.endereco,
-                "status_user":usuario_resultado.status_user,
+                "papel": usuario_resultado.papel,
+                "status_user": usuario_resultado.status_user,
                 "success": "Usuario editado com sucesso!"
             }
 
@@ -817,14 +793,15 @@ def editar_usuario(id_usuario):
     finally:  # Finaliza a sessão
         db_session.close()
 
-# Rota Bloqueada
+
+# correto
 @app.route('/editar_emprestimo/<int:id_emprestimo>', methods=['PUT'])
 def editar_emprestimo(id_emprestimo):
     db_session = session_local()
     try:
         dados = request.get_json()
 
-        # 🔥 AQUI ESTÁ A CORREÇÃO REAL
+        #  AQUI ESTÁ A CORREÇÃO REAL
         emprestimo = db_session.query(Emprestimos).filter_by(
             id=id_emprestimo
         ).first()
@@ -854,7 +831,7 @@ def editar_emprestimo(id_emprestimo):
         db_session.close()
 
 
-# Rota Bloqueada
+
 @app.route('/get_usuario/<id_usuario>', methods=['GET'])
 def get_usuario(id_usuario):
     # @jwt_required()
@@ -876,7 +853,7 @@ def get_usuario(id_usuario):
     """
     db_session = session_local()
     try:
-        usuario = db_session.execute(select(Usuarios).filter_by(id=int(id_usuario))).scalar()
+        usuario = db_session.execute(select(Usuarios).filter_by(id_usuario=int(id_usuario))).scalar()
 
         if not usuario:
             return jsonify({
@@ -885,7 +862,7 @@ def get_usuario(id_usuario):
 
         return jsonify({
             "success": "Usuario encontrado com sucesso",
-            'id': usuario.id_usuario,
+            'id_usuario': usuario.id_usuario,
             "nome": usuario.nome,
             'cpf': usuario.cpf,
             'endereco': usuario.endereco,
@@ -896,6 +873,7 @@ def get_usuario(id_usuario):
         })
     finally:
         db_session.close()
+
 
 # Rota Bloqueada
 @app.route('/get_livro/<id_livro>', methods=['GET'])
@@ -921,7 +899,7 @@ def get_livro(id_livro):
     """
     db_session = session_local()
     try:
-        livro = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
+        livro = db_session.execute(select(Livro).filter_by(id_livro=int(id_livro))).scalar()
 
         if not livro:
             return jsonify({
@@ -930,7 +908,7 @@ def get_livro(id_livro):
 
         return jsonify({
             "sucess": "Livro buscado com sucesso",
-            'id': livro.id_livro,
+            'id_livro': livro.id_livro,
             'Titulo': livro.titulo,
             'Autor': livro.autor,
             'resumo': livro.resumo,
@@ -943,6 +921,7 @@ def get_livro(id_livro):
         })
     finally:
         db_session.close()
+
 
 # @app.route('/deletar_usuario/<id_usuario>', methods=['DELETE'])
 # def deletar_usuario(id_usuario):
@@ -966,26 +945,40 @@ def get_livro(id_livro):
 #     return jsonify({'success': "Usuario deletado com sucesso"})
 #
 #
-# @app.route('/deletar_livro/<id_livro>', methods=['DELETE'])
-# def deletar_livro(id_livro):
-#     """
-#              deletar livro
-#              :return: deletar livro
-#              :param id_livro:id_livro
-#
-#              ## Resposta (JSON)
-#                  json
-#              {
-#                 return jsonify({'success': "Livro deletado com sucesso"})
-#                }
-#            """
-#     livro_resultado = db_session.execute(select(Livro).filter_by(id=int(id_livro))).scalar()
-#
-#     if not livro_resultado:
-#         return jsonify({'error': 'Livro não encontrado'})
-#     livro_resultado.delete_livro()
-#     return jsonify({'success': "Livro deletado com sucesso"})
+@app.route('/deletar_livro/<id_livro>', methods=['DELETE'])
+def deletar_livro(id_livro):
+    """
+             deletar livro
+             :return: deletar livro
+             :param id_livro:id_livro
 
+             ## Resposta (JSON)
+                 json
+             {
+                return jsonify({'success': "Livro deletado com sucesso"})
+               }
+
+           """
+    db_session = session_local()
+    try:
+
+        livro = db_session.execute(select(Livro).filter_by(id_livro=int(id_livro))).scalar()
+
+        if not livro:
+            return jsonify({'error': 'Livro não encontrado'})
+        livro.delete_livro()
+        return jsonify({
+            'success': "Livro deletado com sucesso",
+            'id_livro': livro.id_livro
+        })
+
+    except ValueError:
+        return jsonify({
+            'error': 'Valor inserido invalido'
+    })
+
+    finally:
+        db_session.close()
 
 
 @app.route('/calcular_devolucao/<data_de_emprestimo>', methods=['GET'])
@@ -1004,14 +997,79 @@ def calcular_devolucao(data_de_emprestimo):
 
 
 
+
+
+@app.route('/grafico_livros_mais_emprestados', methods=['GET'])
+def grafico_livros_mais_emprestados():
+
+    db_session = session_local()
+    try:
+        resultado = db_session.query(
+            Livro.titulo,
+            func.count(Emprestimos.id).label('total_emprestimos')
+        ).join(
+            Emprestimos, Livro.id_livro == Emprestimos.livro_emprestado_id
+        ).group_by(
+            Livro.titulo
+        ).order_by(
+            func.count(Emprestimos.id).desc()
+        ).all()
+
+        dados = [
+            {
+                "titulo": r[0],
+                "total": r[1]
+            }
+            for r in resultado
+        ]
+
+        return jsonify({"livros": dados})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+    finally:
+        db_session.close()
+
+
+@app.route('/usuarios_que_mais_realizaram_emp', methods=['GET'])
+def usuarios_que_mais_realizaram_emp():
+
+    db_session = session_local()
+    try:
+        resultado = db_session.query(
+            Usuarios.nome,
+            func.count(Emprestimos.id).label('total_emprestimos')
+        ).join(
+            Emprestimos, Usuarios.id_usuario == Emprestimos.usuario_emprestado_id
+        ).group_by(
+            Usuarios.nome
+        ).order_by(
+            func.count(Emprestimos.id).desc()
+        ).all()
+
+        dados = [
+            {
+                "nome": r[0],
+                "total": r[1]
+            }
+            for r in resultado
+        ]
+
+        return jsonify({"usuarios": dados})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+    finally:
+        db_session.close()
+
 if __name__ == "__main__":
     app.run(
         debug=True,
         host="0.0.0.0",
         port=5000
     )
-
-
 
 # create table EMPRESTIMOS
 # (
@@ -1044,6 +1102,3 @@ if __name__ == "__main__":
 #     cpf      VARCHAR not null,
 #     endereco VARCHAR not null
 # );
-
-
-
