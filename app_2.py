@@ -966,7 +966,7 @@ def deletar_livro(id_livro):
 
         if not livro:
             return jsonify({'error': 'Livro não encontrado'})
-        livro.delete_livro()
+        livro.delete_livro(db_session)
         return jsonify({
             'success': "Livro deletado com sucesso",
             'id_livro': livro.id_livro

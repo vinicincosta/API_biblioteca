@@ -168,7 +168,15 @@ class Emprestimos(Base):
             "data_de_emprestimo": self.data_de_emprestimo,
             'data_de_devolucao': self.data_de_devolucao,
             "livro_emprestado_id": self.livro_emprestado_id,
+
+            # Para exibir o titulo do livro na lista Empréstimos
+            "livro_titulo": self.livro_emprestado.titulo if self.livro_emprestado else None,
+
             "usuario_emprestado_id": self.usuario_emprestado_id,
+
+            # Para exibir o nome do Usuário na lista empréstimos
+            "usuario_nome": self.usuario_emprestado.nome if self.usuario_emprestado else None,
+
             "status": self.status,
         }
         return dados_emprestimo
