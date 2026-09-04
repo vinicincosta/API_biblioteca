@@ -218,34 +218,46 @@ def livros_disponiveis():
     finally:
         db_session.close()
 
-# Correto
+# Rota responsável por listar os livros que estão emprestados
 @app.route('/livros_emprestados', methods=['GET'])
 def livros_emprestados():
 
+    # Cria uma sessão com o banco de dados
     db_session = session_local()
+
     try:
-        # Buscar empréstimos com status ATIVO
+        # Busca somente os empréstimos que estão ativos
         emprestimos_ativos = db_session.execute(
             select(Emprestimos)
             .where(Emprestimos.status == "Ativo")
         ).scalars().all()
 
+        # Cria uma lista para armazenar os empréstimos
         lista_livros = []
 
+        # Percorre todos os empréstimos ativos
         for emprestimo in emprestimos_ativos:
-            livro = db_session.get(Livro, emprestimo.livro_emprestado_id)
-            if livro:
-                lista_livros.append(livro.serialize_livro())
 
-        return jsonify({'livros_emprestados': lista_livros})
+            # Converte os dados do empréstimo para um dicionário
+            lista_livros.append(
+                emprestimo.serialize_emprestimo()
+            )
 
+        # Exibe a lista no terminal
+        print(lista_livros)
+
+        # Retorna os empréstimos em formato JSON
+        return jsonify({
+            'livros_emprestados': lista_livros
+        }), 200
+
+    # Caso ocorra algum erro durante a consulta
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
+    # Fecha a conexão com o banco
     finally:
         db_session.close()
-
-
 # Rota Bloqueada
 @app.route('/historico_emprestimos/<int:id_usuario>', methods=['GET'])
 def historico_emprestimos(id_usuario):
@@ -716,8 +728,8 @@ def editar_livro(id_livro):
 
 
 # Rota Bloqueada
-@app.route('/editar_usuario/<id_usuario>', methods=['PUT'])
-def editar_usuario(id_usuario):
+@app.route('/editar_usuarios/<id_usuario>', methods=['PUT'])
+def put_usuario(id_usuario):
     # @jwt_required()
     # @admin_required
     """
@@ -768,6 +780,7 @@ def editar_usuario(id_usuario):
             usuario_resultado.endereco = dados_editar_usuario['endereco']
             usuario_resultado.papel = dados_editar_usuario['papel']
             usuario_resultado.status_user = dados_editar_usuario['status_user']
+
             usuario_resultado.save(db_session)
             # salva os dados alterados
             resultado = {
@@ -864,6 +877,7 @@ def get_usuario(id_usuario):
             "success": "Usuario encontrado com sucesso",
             'id_usuario': usuario.id_usuario,
             "nome": usuario.nome,
+            'email': usuario.email,
             'cpf': usuario.cpf,
             'endereco': usuario.endereco,
         }), 200
@@ -909,10 +923,11 @@ def get_livro(id_livro):
         return jsonify({
             "sucess": "Livro buscado com sucesso",
             'id_livro': livro.id_livro,
-            'Titulo': livro.titulo,
-            'Autor': livro.autor,
+            'titulo': livro.titulo,
+            'autor': livro.autor,
             'resumo': livro.resumo,
-            'isbn': livro.ISBN,
+            'ISBN': livro.ISBN,
+            'leitura': livro.leitura,
 
         })
     except ValueError:

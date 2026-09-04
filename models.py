@@ -163,22 +163,46 @@ class Emprestimos(Base):
         db_session.commit()
 
     def serialize_emprestimo(self):
+
         dados_emprestimo = {
+
+            # ID do empréstimo
             "id_emprestimo": self.id,
+
+            # Data do empréstimo
             "data_de_emprestimo": self.data_de_emprestimo,
-            'data_de_devolucao': self.data_de_devolucao,
+
+            # Data de devolução
+            "data_de_devolucao": self.data_de_devolucao,
+
+            # ID do livro emprestado
             "livro_emprestado_id": self.livro_emprestado_id,
 
-            # Para exibir o titulo do livro na lista Empréstimos
+            # Título do livro
             "livro_titulo": self.livro_emprestado.titulo if self.livro_emprestado else None,
 
+            # Autor do livro
+            "livro_autor": self.livro_emprestado.autor if self.livro_emprestado else None,
+
+            # ISBN do livro
+            "livro_isbn": self.livro_emprestado.ISBN if self.livro_emprestado else None,
+
+            # Resumo do livro
+            "livro_resumo": self.livro_emprestado.resumo if self.livro_emprestado else None,
+
+            # Conteúdo do livro
+            "livro_leitura": self.livro_emprestado.leitura if self.livro_emprestado else None,
+
+            # ID do usuário que pegou o livro
             "usuario_emprestado_id": self.usuario_emprestado_id,
 
-            # Para exibir o nome do Usuário na lista empréstimos
+            # Nome do usuário que pegou o livro
             "usuario_nome": self.usuario_emprestado.nome if self.usuario_emprestado else None,
 
+            # Status do empréstimo
             "status": self.status,
         }
+
         return dados_emprestimo
 
 def init_db():
