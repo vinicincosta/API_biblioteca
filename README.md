@@ -160,4 +160,4 @@ curl -X POST http://localhost:5000/novo_emprestimo \
 ## Projetos relacionados
 
 - [app_biblioteca](https://github.com/vinicincosta/app_biblioteca): app mobile em Flet
-- [Biblioteca_Web](https://github.com/vinicincosta/Biblioteca_Web): interface web
+- [Biblioteca_Web](https://github.com/vinicincosta/Biblioteca_Web): Gerenciamento web
